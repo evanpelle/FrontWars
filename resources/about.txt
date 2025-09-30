@@ -1,25 +1,45 @@
 FrontWars
 =========
 
-FrontWars is an open-source project distributed under the GNU General Public License, version 3 (GPL-3.0).
+FrontWars is an open-source project based on the OpenFrontIO project by **OpenFront LLC**, with modifications and ongoing development by **Vexxus Arts Ltd**.
 
-This game is a fork of the original project created by **OpenFront LLC**, available at:
-https://github.com/openfrontio/OpenFrontIO
+Repositories
+------------
+- Original project: https://github.com/openfrontio/OpenFrontIO
+- Our maintained fork: https://github.com/Elitis/FrontWars
 
-Our maintained fork of the codebase can be found at:
-https://github.com/Elitis/FrontWars/
+Licenses
+--------
+FrontWars is a derivative work that combines components under different open-source licenses:
 
-License
--------
-FrontWars, as a derivative work of OpenFrontIO, is licensed under the GNU General Public License, version 3.
-You are free to use, modify, and distribute this software under the terms of the GPL-3.0.
+- **MIT License**  
+  Applies to portions of the original OpenFrontIO codebase except where otherwise noted.  
+  © 2024 WarFront.io Team, © 2024 OpenFront.io Team, © 2025 FrontWars.io Team.  
+  MIT allows use, modification, and distribution with attribution.
 
-For full license terms, see the included LICENSE file or visit:
-https://www.gnu.org/licenses/gpl-3.0.en.html
+- **GNU General Public License v3.0 (GPL-3.0)**  
+  Applies to the `src/client` directory of OpenFrontIO as of commit 25d5cc370207fd39e0c3bcaa69873b8fc6c60e68 (March 25, 2025), and to our derivative client work.  
+  GPL also applies to certain original OpenFrontIO assets that remain part of this project.  
+  **At the time this project was forked (August 2025), the `src/client` directory and applicable assets were licensed under GPL-3.0. Our fork continues under those same GPL-3.0 terms. Subsequent changes to licensing in the upstream repository do not retroactively affect this fork.**  
+  Full text: https://www.gnu.org/licenses/gpl-3.0.en.html
+
+- **Game Assets (Replaced)**  
+  The original OpenFrontIO repository included some assets licensed under **CC BY-NC 4.0 with a commercial exemption**.  
+  In FrontWars, all assets under that non-commercial license have been **removed and replaced** with new assets created by **3AM Experiences LLC**, licensed to **Vexxus Arts Ltd** under a worldwide, perpetual license for use in FrontWars.  
+  These replaced assets are not subject to the original CC BY-NC license.  
+  All other assets from OpenFrontIO remain under GPL-3.0.
 
 Attribution
 -----------
-- Original authors: OpenFront LLC and contributors to the OpenFrontIO project
-- Modifications and ongoing development: Vexxus Arts (https://frontwars.io) and contributors to the Elitis/FrontWars fork
+- Original authors: OpenFront LLC and contributors to the OpenFrontIO project  
+- MIT-licensed portions: WarFront.io Team, OpenFront.io Team  
+- Modifications and ongoing development: Vexxus Arts Ltd (https://frontwars.io) and contributors to the Elitis/FrontWars fork  
+- Replacement assets: Created by 3AM Experiences LLC, licensed for use in FrontWars  
+- GPL-licensed assets: Retained from OpenFrontIO under GPL-3.0
 
-Copyright © OpenFront LLC and contributors  
+Notes
+-----
+- Any combination of MIT and GPL code is governed by the stronger copyleft terms of GPL-3.0.  
+- Non-commercial (CC BY-NC) assets from OpenFrontIO have been replaced with new assets from 3AM Experiences LLC.  
+- Other assets inherited from OpenFrontIO remain available under GPL-3.0.  
+- This project is fully open-source, and the complete corresponding source code is available at: https://github.com/Elitis/FrontWars
