@@ -1,54 +1,52 @@
-import "./DarkModeButton";
-import "./FlagInput";
-import "./GoogleAdElement";
-import "./LangSelector";
-import "./PublicLobby";
-import "./UsernameInput";
-import "./components/NewsButton";
-import "./components/baseComponents/Button";
-import "./components/baseComponents/Modal";
-import "./styles.css";
-import { GameRecord, GameStartInfo } from "../core/Schemas";
-import { discordLogin, getUserMe, isLoggedIn, logOut } from "./jwt";
-import { generateCryptoRandomUUID, incrementGamesPlayed, translateText } from "./Utils";
-import { DarkModeButton } from "./DarkModeButton";
+import { UserMeResponse } from "../core/ApiSchemas";
 import { EventBus } from "../core/EventBus";
+import { GameRecord, GameStartInfo, ID } from "../core/Schemas";
+import { ServerConfig } from "../core/configuration/Config";
+import { getServerConfigFromClient } from "../core/configuration/ConfigLoader";
+import { UserSettings } from "../core/game/UserSettings";
+import "./AccountModal";
+import { joinLobby } from "./ClientGameRunner";
+import { fetchCosmetics } from "./Cosmetics";
+import { CrazySDK } from "./CrazyGamesSDK";
+import { AdProvider } from "./AdProvider";
+import "./DarkModeButton";
+import { DarkModeButton } from "./DarkModeButton";
+import "./FlagInput";
 import { FlagInput } from "./FlagInput";
 import { FlagInputModal } from "./FlagInputModal";
 import { GameStartingModal } from "./GameStartingModal";
-import { GameType } from "../core/game/Game";
+import "./GoogleAdElement";
 import { HelpModal } from "./HelpModal";
 import { HostLobbyModal } from "./HostLobbyModal";
-import { ID } from "../core/BaseSchemas";
 import { JoinPrivateLobbyModal } from "./JoinPrivateLobbyModal";
+import "./LangSelector";
 import { LangSelector } from "./LangSelector";
 import { LanguageModal } from "./LanguageModal";
-import { NewsButton } from "./components/NewsButton";
 import { NewsModal } from "./NewsModal";
-import { OButton } from "./components/baseComponents/Button";
+import "./PublicLobby";
 import { PublicLobby } from "./PublicLobby";
-import { SendKickPlayerIntentEvent } from "./Transport";
-import { ServerConfig } from "../core/configuration/Config";
 import { SinglePlayerModal } from "./SinglePlayerModal";
 import { TerritoryPatternsModal } from "./TerritoryPatternsModal";
-import { UserMeResponse } from "../core/ApiSchemas";
+import { TokenLoginModal } from "./TokenLoginModal";
+import { SendKickPlayerIntentEvent } from "./Transport";
 import { UserSettingModal } from "./UserSettingModal";
-import { UserSettings } from "../core/game/UserSettings";
+import "./UsernameInput";
 import { UsernameInput } from "./UsernameInput";
-import { getClientID } from "../core/Util";
-import { getServerConfigFromClient } from "../core/configuration/ConfigLoader";
-import { joinLobby } from "./ClientGameRunner";
-import version from "../../resources/version.txt";
-import { CrazySDK } from "./CrazyGamesSDK";
+import {
+  generateCryptoRandomUUID,
+  incrementGamesPlayed,
+  isInIframe,
+  translateText,
+} from "./Utils";
+import "./components/NewsButton";
+import { NewsButton } from "./components/NewsButton";
+import "./components/baseComponents/Button";
+import "./components/baseComponents/Modal";
+import { discordLogin, getUserMe, isLoggedIn } from "./jwt";
+import "./styles.css";
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
   interface Window {
-    PageOS: {
-      session: {
-        newPageView: () => void;
-      };
-    };
     ramp: {
       que: Array<() => void>;
       passiveMode: boolean;
@@ -62,14 +60,13 @@ declare global {
   }
 
   // Extend the global interfaces to include your custom events
-  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
   interface DocumentEventMap {
     "join-lobby": CustomEvent<JoinLobbyEvent>;
-    "kick-player": CustomEvent<KickPlayerEvent>;
+    "kick-player": CustomEvent;
   }
 }
 
-export type JoinLobbyEvent = {
+export interface JoinLobbyEvent {
   clientID: string;
   // Multiplayer games only have gameID, gameConfig is not known until game starts.
   gameID: string;
@@ -77,23 +74,21 @@ export type JoinLobbyEvent = {
   gameStartInfo?: GameStartInfo;
   // GameRecord exists when replaying an archived game.
   gameRecord?: GameRecord;
-};
-
-export type KickPlayerEvent = {
-  target: string;
-};
+}
 
 class Client {
   private gameStop: (() => void) | null = null;
-  private readonly eventBus: EventBus = new EventBus();
+  private eventBus: EventBus = new EventBus();
 
   private usernameInput: UsernameInput | null = null;
   private flagInput: FlagInput | null = null;
   private darkModeButton: DarkModeButton | null = null;
 
-  private joinModal: JoinPrivateLobbyModal | undefined;
-  private publicLobby: PublicLobby | undefined;
-  private readonly userSettings: UserSettings = new UserSettings();
+  private joinModal: JoinPrivateLobbyModal;
+  private publicLobby: PublicLobby;
+  private userSettings: UserSettings = new UserSettings();
+  private patternsModal: TerritoryPatternsModal;
+  private tokenLoginModal: TokenLoginModal;
 
   constructor() {}
 
@@ -145,13 +140,6 @@ class Client {
     if (!this.darkModeButton) {
       console.warn("Dark mode button element not found");
     }
-
-    const loginDiscordButton = document.getElementById(
-      "login-discord",
-    ) as OButton;
-    const logoutDiscordButton = document.getElementById(
-      "logout-discord",
-    ) as OButton;
 
     this.usernameInput = document.querySelector(
       "username-input",
@@ -210,23 +198,39 @@ class Client {
       flagInputModal.open();
     });
 
-    const territoryModal = document.querySelector(
+    this.patternsModal = document.querySelector(
       "territory-patterns-modal",
     ) as TerritoryPatternsModal;
     const patternButton = document.getElementById(
       "territory-patterns-input-preview-button",
     );
-    territoryModal instanceof TerritoryPatternsModal;
+    if (isInIframe() && patternButton) {
+      patternButton.style.display = "none";
+    }
+
+    this.patternsModal instanceof TerritoryPatternsModal;
     if (patternButton === null)
       throw new Error("territory-patterns-input-preview-button");
-    territoryModal.previewButton = patternButton;
-    territoryModal.refresh();
+    this.patternsModal.previewButton = patternButton;
+    this.patternsModal.refresh();
     patternButton.addEventListener("click", () => {
-      territoryModal.open();
+      this.patternsModal.open();
     });
 
-    loginDiscordButton.addEventListener("click", discordLogin);
+    this.tokenLoginModal = document.querySelector(
+      "token-login",
+    ) as TokenLoginModal;
+    this.tokenLoginModal instanceof TokenLoginModal;
+
     const onUserMe = async (userMeResponse: UserMeResponse | false) => {
+      document.dispatchEvent(
+        new CustomEvent("userMeResponse", {
+          detail: userMeResponse,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+
       const config = await getServerConfigFromClient();
       if (!hasAllowedFlare(userMeResponse, config)) {
         if (userMeResponse === false) {
@@ -304,20 +308,14 @@ class Client {
         return;
       } else if (userMeResponse === false) {
         // Not logged in
-        loginDiscordButton.disable = false;
-        loginDiscordButton.hidden = true; // TODO: Remove this once we have a way to login
-        loginDiscordButton.translationKey = "main.login_discord";
-        logoutDiscordButton.hidden = true;
-        territoryModal.onUserMe(null);
+        this.patternsModal.onUserMe(null);
       } else {
         // Authorized
         console.log(
           `Your player ID is ${userMeResponse.player.publicId}\n` +
             "Sharing this ID will allow others to view your game history and stats.",
         );
-        loginDiscordButton.translationKey = "main.logged_in";
-        loginDiscordButton.hidden = true;
-        territoryModal.onUserMe(userMeResponse);
+        this.patternsModal.onUserMe(userMeResponse);
       }
     };
 
@@ -326,15 +324,6 @@ class Client {
       onUserMe(false);
     } else {
       // JWT appears to be valid
-      loginDiscordButton.disable = true;
-      loginDiscordButton.translationKey = "main.checking_login";
-      logoutDiscordButton.hidden = false;
-      logoutDiscordButton.addEventListener("click", () => {
-        // Log out
-        logOut();
-        onUserMe(false);
-      });
-      // Look up the discord user object.
       // TODO: Add caching
       getUserMe().then(onUserMe);
     }
@@ -358,7 +347,7 @@ class Client {
     hostLobbyButton.addEventListener("click", () => {
       if (this.usernameInput?.isValid()) {
         hostModal.open();
-        this.publicLobby?.leaveLobby();
+        this.publicLobby.leaveLobby();
       }
     });
 
@@ -373,7 +362,7 @@ class Client {
       throw new Error("Missing join-private-lobby-button");
     joinPrivateLobbyButton.addEventListener("click", () => {
       if (this.usernameInput?.isValid()) {
-        this.joinModal?.open();
+        this.joinModal.open();
       }
     });
 
@@ -382,6 +371,9 @@ class Client {
     } else {
       document.documentElement.classList.remove("dark");
     }
+
+    // Halloween
+    document.documentElement.classList.add("halloween");
 
     // Attempt to join lobby
     this.handleHash();
@@ -394,7 +386,7 @@ class Client {
 
     const onHashUpdate = () => {
       // Reset the UI to its initial state
-      this.joinModal?.close();
+      this.joinModal.close();
       if (this.gameStop !== null) {
         this.handleLeaveLobby();
       }
@@ -426,39 +418,90 @@ class Client {
   }
 
   private handleHash() {
-    const { hash } = window.location;
-
-    const alertAndStrip = (message: string) => {
-      alert(message);
+    const strip = () =>
       history.replaceState(
         null,
         "",
         window.location.pathname + window.location.search,
       );
+
+    const alertAndStrip = (message: string) => {
+      alert(message);
+      strip();
     };
 
-    if (hash.startsWith("#")) {
-      const params = new URLSearchParams(hash.slice(1));
-      if (params.get("purchase-completed") === "true") {
-        alertAndStrip("purchase succeeded");
-        return;
-      } else if (params.get("purchase-completed") === "false") {
+    const hash = window.location.hash;
+
+    // Decode the hash first to handle encoded characters
+    const decodedHash = decodeURIComponent(hash);
+    const params = new URLSearchParams(decodedHash.split("?")[1] || "");
+
+    // Handle different hash sections
+    if (decodedHash.startsWith("#purchase-completed")) {
+      // Parse params after the ?
+      const status = params.get("status");
+
+      if (status !== "true") {
         alertAndStrip("purchase failed");
         return;
       }
-      const lobbyId = params.get("join");
+
+      const patternName = params.get("pattern");
+      if (!patternName) {
+        alert("Something went wrong. Please contact support.");
+        console.error("purchase-completed but no pattern name");
+        return;
+      }
+
+      this.userSettings.setSelectedPatternName(patternName);
+      const token = params.get("login-token");
+
+      if (token) {
+        strip();
+        window.addEventListener("beforeunload", () => {
+          // The page reloads after token login, so we need to save the pattern name
+          // in case it is unset during reload.
+          this.userSettings.setSelectedPatternName(patternName);
+        });
+        this.tokenLoginModal.open(token);
+      } else {
+        alertAndStrip(`purchase succeeded: ${patternName}`);
+        this.patternsModal.refresh();
+      }
+      return;
+    }
+
+    if (decodedHash.startsWith("#token-login")) {
+      const token = params.get("token-login");
+
+      if (!token) {
+        alertAndStrip(
+          `login failed! Please try again later or contact support.`,
+        );
+        return;
+      }
+
+      strip();
+      this.tokenLoginModal.open(token);
+      return;
+    }
+
+    if (decodedHash.startsWith("#join=")) {
+      const lobbyId = decodedHash.substring(6); // Remove "#join="
       if (lobbyId && ID.safeParse(lobbyId).success) {
-        this.joinModal?.open(lobbyId);
+        this.joinModal.open(lobbyId);
         console.log(`joining lobby ${lobbyId}`);
       }
     }
-
-    // Handle CrazyGames invite parameters from URL search params
-    const urlParams = new URLSearchParams(window.location.search);
-    const roomId = urlParams.get("roomId");
-    if (roomId && ID.safeParse(roomId).success) {
-      console.log(`Joining via invite link: ${roomId}`);
-      this.joinModal?.open(roomId);
+    if (decodedHash.startsWith("#affiliate=")) {
+      const affiliateCode = decodedHash.replace("#affiliate=", "");
+      strip();
+      if (affiliateCode) {
+        this.patternsModal.open(affiliateCode);
+      }
+    }
+    if (decodedHash.startsWith("#refresh")) {
+      CrazySDK.redirectTo("/");
     }
   }
 
@@ -481,10 +524,14 @@ class Client {
 
     const isInstantMultiplayer = await CrazySDK.isInstantMultiplayer();
     if (isInstantMultiplayer) {
-      console.log("CrazyGames instant multiplayer detected, opening host modal");
+      console.log(
+        "CrazyGames instant multiplayer detected, opening host modal",
+      );
       // Wait for the UI to be ready and ensure username is valid
       if (this.usernameInput?.isValid()) {
-        const hostModal = document.querySelector("host-lobby-modal") as HostLobbyModal;
+        const hostModal = document.querySelector(
+          "host-lobby-modal",
+        ) as HostLobbyModal;
         if (hostModal) {
           hostModal.open();
           this.publicLobby?.leaveLobby();
@@ -502,19 +549,27 @@ class Client {
     }
     const config = await getServerConfigFromClient();
 
+    const pattern = this.userSettings.getSelectedPatternName(
+      await fetchCosmetics(),
+    );
+
     this.gameStop = joinLobby(
       this.eventBus,
       {
         gameID: lobby.gameID,
         serverConfig: config,
-        pattern: this.userSettings.getSelectedPattern(),
-        flag:
-          this.flagInput === null || this.flagInput.getCurrentFlag() === "xx"
-            ? ""
-            : this.flagInput.getCurrentFlag(),
+        cosmetics: {
+          color: this.userSettings.getSelectedColor() ?? undefined,
+          patternName: pattern?.name ?? undefined,
+          patternColorPaletteName: pattern?.colorPalette?.name ?? undefined,
+          flag:
+            this.flagInput === null || this.flagInput.getCurrentFlag() === "xx"
+              ? ""
+              : this.flagInput.getCurrentFlag(),
+        },
         playerName: this.usernameInput?.getCurrentUsername() ?? "",
         token: getPlayToken(),
-        clientID: getClientID(lobby.gameID),
+        clientID: lobby.clientID,
         gameStartInfo: lobby.gameStartInfo ?? lobby.gameRecord?.info,
         gameRecord: lobby.gameRecord,
       },
@@ -547,7 +602,7 @@ class Client {
             modal.isModalOpen = false;
           }
         });
-        this.publicLobby?.stop();
+        this.publicLobby.stop();
         document.querySelectorAll(".ad").forEach((ad) => {
           (ad as HTMLElement).style.display = "none";
         });
@@ -560,23 +615,19 @@ class Client {
         startingModal.show();
       },
       () => {
-        this.joinModal?.close();
-        this.publicLobby?.stop();
+        this.joinModal.close();
+        this.publicLobby.stop();
         incrementGamesPlayed();
-
-        try {
-          window.PageOS.session.newPageView();
-        } catch (e) {
-          console.error("Error calling newPageView", e);
-        }
 
         document.querySelectorAll(".ad").forEach((ad) => {
           (ad as HTMLElement).style.display = "none";
         });
 
-        if (lobby.gameStartInfo?.config.gameType !== GameType.Singleplayer) {
-          history.pushState(null, "", `#join=${lobby.gameID}`);
+        // Ensure there's a homepage entry in history before adding the lobby entry
+        if (window.location.hash === "" || window.location.hash === "#") {
+          history.pushState(null, "", window.location.origin + "#refresh");
         }
+        history.pushState(null, "", `#join=${lobby.gameID}`);
 
         CrazySDK.gameplayStart();
       },
@@ -590,13 +641,13 @@ class Client {
     console.log("leaving lobby, cancelling game");
     this.gameStop();
     this.gameStop = null;
-    this.publicLobby?.leaveLobby();
+    this.publicLobby.leaveLobby();
 
     // Gameplay stopped
     CrazySDK.gameplayStop();
   }
 
-  private handleKickPlayer(event: CustomEvent<KickPlayerEvent>) {
+  private handleKickPlayer(event: CustomEvent) {
     const { target } = event.detail;
 
     // Forward to eventBus if available
@@ -607,9 +658,9 @@ class Client {
 }
 
 // Initialize the client when the DOM is loaded
-document.addEventListener("DOMContentLoaded", () => {
-  // Initialize CrazyGames SDK if present (non-blocking)
-  void CrazySDK.init();
+document.addEventListener("DOMContentLoaded", async () => {
+  // Initialize Ad Provider (configures CrazyGames and NitroPay) before booting UI
+  void AdProvider.init();
   new Client().initialize();
 });
 
@@ -660,7 +711,7 @@ function hasAllowedFlare(
   const allowed = config.allowedFlares();
   if (allowed === undefined) return true;
   if (userMeResponse === false) return false;
-  const { flares } = userMeResponse.player;
+  const flares = userMeResponse.player.flares;
   if (flares === undefined) return false;
   return allowed.length === 0 || allowed.some((f) => flares.includes(f));
 }

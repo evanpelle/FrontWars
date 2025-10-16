@@ -1,52 +1,43 @@
-import { LitElement, html } from "lit";
+import { html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { EventBus } from "../../../core/EventBus";
-import { GameType } from "../../../core/game/Game";
-import { GameUpdateType } from "../../../core/game/GameUpdates";
-import { GameView } from "../../../core/game/GameView";
-import { Layer } from "./Layer";
-import { PauseGameEvent } from "../../Transport";
-import { ShowReplayPanelEvent } from "./ReplayPanel";
-import { ShowSettingsModalEvent } from "./SettingsModal";
-import { CrazySDK } from "../../CrazyGamesSDK";
 import exitIcon from "../../../../resources/images/ExitIconWhite.svg";
 import pauseIcon from "../../../../resources/images/PauseIconWhite.svg";
 import playIcon from "../../../../resources/images/PlayIconWhite.svg";
 import replayRegularIcon from "../../../../resources/images/ReplayRegularIconWhite.svg";
 import replaySolidIcon from "../../../../resources/images/ReplaySolidIconWhite.svg";
 import settingsIcon from "../../../../resources/images/SettingIconWhite.svg";
+import { EventBus } from "../../../core/EventBus";
+import { GameType } from "../../../core/game/Game";
+import { GameUpdateType } from "../../../core/game/GameUpdates";
+import { GameView } from "../../../core/game/GameView";
+import { CrazySDK } from "../../CrazyGamesSDK";
+import { PauseGameEvent } from "../../Transport";
 import { translateText } from "../../Utils";
-import { GameInfo, GameInfoSchema } from "../../../core/Schemas";
-import { getServerConfigFromClient } from "../../../core/configuration/ConfigLoader";
+import { Layer } from "./Layer";
+import { ShowReplayPanelEvent } from "./ReplayPanel";
+import { ShowSettingsModalEvent } from "./SettingsModal";
 
 @customElement("game-right-sidebar")
 export class GameRightSidebar extends LitElement implements Layer {
-  public game: GameView | undefined;
-  public eventBus: EventBus | undefined;
+  public game: GameView;
+  public eventBus: EventBus;
 
   @state()
-  private _isSinglePlayer = false;
+  private _isSinglePlayer: boolean = false;
 
   @state()
-  private _isReplayVisible = false;
+  private _isReplayVisible: boolean = false;
 
   @state()
-  private _isVisible = true;
+  private _isVisible: boolean = true;
 
   @state()
-  private isPaused = false;
+  private isPaused: boolean = false;
 
   @state()
-  private timer = 0;
-
-  @state()
-  private lobbySize = 0;
-
-  @state()
-  private isPrivateLobby = false;
+  private timer: number = 0;
 
   private hasWinner = false;
-  private playersInterval: ReturnType<typeof setInterval> | null = null;
 
   createRenderRoot() {
     return this;
@@ -55,22 +46,13 @@ export class GameRightSidebar extends LitElement implements Layer {
   init() {
     this._isSinglePlayer =
       this.game?.config()?.gameConfig()?.gameType === GameType.Singleplayer ||
-      (this.game?.config().isReplay() ?? false);
+      this.game.config().isReplay();
     this._isVisible = true;
-
-    // Check if this is a private lobby and start polling
-    const gameType = this.game?.config()?.gameConfig()?.gameType;
-    this.isPrivateLobby = gameType === GameType.Private;
-
-    if (this.isPrivateLobby) {
-      this.startPolling();
-    }
-
+    this.game.inSpawnPhase();
     this.requestUpdate();
   }
 
   tick() {
-    if (!this.game) throw new Error("Not initialized");
     // Timer logic
     const updates = this.game.updatesSinceLastTick();
     if (updates) {
@@ -83,7 +65,7 @@ export class GameRightSidebar extends LitElement implements Layer {
     }
   }
 
-  private readonly secondsToHms = (d: number): string => {
+  private secondsToHms = (d: number): string => {
     const h = Math.floor(d / 3600);
     const m = Math.floor((d % 3600) / 60);
     const s = Math.floor((d % 3600) % 60);
@@ -95,18 +77,18 @@ export class GameRightSidebar extends LitElement implements Layer {
 
   private toggleReplayPanel(): void {
     this._isReplayVisible = !this._isReplayVisible;
-    this.eventBus?.emit(
+    this.eventBus.emit(
       new ShowReplayPanelEvent(this._isReplayVisible, this._isSinglePlayer),
     );
   }
 
   private onPauseButtonClick() {
     this.isPaused = !this.isPaused;
-    this.eventBus?.emit(new PauseGameEvent(this.isPaused));
+    this.eventBus.emit(new PauseGameEvent(this.isPaused));
   }
 
   private onExitButtonClick() {
-    const isAlive = this.game?.myPlayer()?.isAlive();
+    const isAlive = this.game.myPlayer()?.isAlive();
     if (isAlive) {
       const isConfirmed = confirm(
         translateText("help_modal.exit_confirmation"),
@@ -125,51 +107,9 @@ export class GameRightSidebar extends LitElement implements Layer {
   }
 
   private onSettingsButtonClick() {
-    this.eventBus?.emit(
+    this.eventBus.emit(
       new ShowSettingsModalEvent(true, this._isSinglePlayer, this.isPaused),
     );
-  }
-
-  private startPolling() {
-    if (this.playersInterval) {
-      clearInterval(this.playersInterval);
-    }
-    this.playersInterval = setInterval(() => this.pollPlayers(), 1000);
-  }
-
-  private stopPolling() {
-    if (this.playersInterval) {
-      clearInterval(this.playersInterval);
-      this.playersInterval = null;
-    }
-  }
-
-  public async pollPlayers() {
-    if (!this.game?.gameID()) return;
-    const config = await getServerConfigFromClient();
-
-    fetch(
-      `/${config.workerPath(this.game.gameID())}/api/game/${this.game.gameID()}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      },
-    )
-      .then((response) => response.json())
-      .then(GameInfoSchema.parse)
-      .then((data: GameInfo) => {
-        this.lobbySize = data.clients?.length ?? 0;
-      })
-      .catch((error) => {
-        console.error("Error polling players:", error);
-      });
-  }
-
-  disconnectedCallback() {
-    this.stopPolling();
-    super.disconnectedCallback();
   }
 
   render() {
@@ -177,10 +117,9 @@ export class GameRightSidebar extends LitElement implements Layer {
 
     return html`
       <aside
-        class=${`flex flex-col max-h-[calc(100vh-80px)] overflow-y-auto p-2
-          bg-gray-800/70 backdrop-blur-sm shadow-xs rounded-tl-lg rounded-bl-lg
-          transition-transform duration-300 ease-out transform
-          ${this._isVisible ? "translate-x-0" : "translate-x-full"}`}
+        class=${`flex flex-col max-h-[calc(100vh-80px)] overflow-y-auto p-2 bg-gray-800/70 backdrop-blur-sm shadow-xs rounded-tl-lg rounded-bl-lg transition-transform duration-300 ease-out transform ${
+          this._isVisible ? "translate-x-0" : "translate-x-full"
+        }`}
         @contextmenu=${(e: Event) => e.preventDefault()}
       >
         <div
@@ -208,27 +147,11 @@ export class GameRightSidebar extends LitElement implements Layer {
         <!-- Timer display below buttons -->
         <div class="flex justify-center items-center mt-2">
           <div
-            class="w-[70px] h-8 lg:w-24 lg:h-10 border border-slate-400 p-0.5
-            text-xs md:text-sm lg:text-base flex items-center justify-center
-            text-white px-1"
+            class="w-[70px] h-8 lg:w-24 lg:h-10 border border-slate-400 p-0.5 text-xs md:text-sm lg:text-base flex items-center justify-center text-white px-1"
           >
             ${this.secondsToHms(this.timer)}
           </div>
         </div>
-        
-        <!-- Lobby size display (only show in private lobbies) -->
-        ${this.isPrivateLobby ? html`
-          <div class="flex justify-center items-center mt-2">
-            <div
-              class="w-[70px] h-6 lg:w-24 lg:h-8 border border-slate-400 p-0.5
-              text-xs md:text-sm lg:text-base flex items-center justify-center
-              text-white px-1 bg-slate-700/50"
-              title="Players in private lobby"
-            >
-              Lobby: ${this.lobbySize}
-            </div>
-          </div>
-        ` : ""}
       </aside>
     `;
   }

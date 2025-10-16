@@ -1,19 +1,19 @@
-import { AnimatedSprite } from "./AnimatedSprite";
-import { FxType } from "./fx/Fx";
-import { PlayerView } from "../../core/game/GameView";
-import SAMExplosion from "../../../resources/sprites/samExplosion.png";
-import { Theme } from "../../core/configuration/Config";
-import { colorizeCanvas } from "./SpriteLoader";
+import miniBigSmoke from "../../../resources/sprites/bigsmoke.png";
 import conquestSword from "../../../resources/sprites/conquestSword.png";
 import dust from "../../../resources/sprites/dust.png";
-import miniBigSmoke from "../../../resources/sprites/bigsmoke.png";
 import miniExplosion from "../../../resources/sprites/miniExplosion.png";
 import miniFire from "../../../resources/sprites/minifire.png";
+import nuke from "../../../resources/sprites/nukeExplosion.png";
+import SAMExplosion from "../../../resources/sprites/samExplosion.png";
+import sinkingShip from "../../../resources/sprites/sinkingShip.png";
 import miniSmoke from "../../../resources/sprites/smoke.png";
 import miniSmokeAndFire from "../../../resources/sprites/smokeAndFire.png";
-import nuke from "../../../resources/sprites/nukeExplosion.png";
-import sinkingShip from "../../../resources/sprites/sinkingShip.png";
 import unitExplosion from "../../../resources/sprites/unitExplosion.png";
+import { Theme } from "../../core/configuration/Config";
+import { PlayerView } from "../../core/game/GameView";
+import { AnimatedSprite } from "./AnimatedSprite";
+import { FxType } from "./fx/Fx";
+import { colorizeCanvas } from "./SpriteLoader";
 
 type AnimatedSpriteConfig = {
   url: string;
@@ -128,9 +128,9 @@ const ANIMATED_SPRITE_CONFIG: Partial<Record<FxType, AnimatedSpriteConfig>> = {
 };
 
 export class AnimatedSpriteLoader {
-  private readonly animatedSpriteImageMap: Map<FxType, HTMLCanvasElement> = new Map();
+  private animatedSpriteImageMap: Map<FxType, HTMLCanvasElement> = new Map();
   // Do not color the same sprite twice
-  private readonly coloredAnimatedSpriteCache: Map<string, HTMLCanvasElement> =
+  private coloredAnimatedSpriteCache: Map<string, HTMLCanvasElement> =
     new Map();
 
   public async loadAllAnimatedSpriteImages(): Promise<void> {
@@ -154,9 +154,7 @@ export class AnimatedSpriteLoader {
           const canvas = document.createElement("canvas");
           canvas.width = img.width;
           canvas.height = img.height;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) throw new Error("2D context not supported");
-          ctx.drawImage(img, 0, 0);
+          canvas.getContext("2d")!.drawImage(img, 0, 0);
 
           this.animatedSpriteImageMap.set(typedFxType, canvas);
         } catch (err) {
@@ -190,12 +188,14 @@ export class AnimatedSpriteLoader {
     const baseImage = this.animatedSpriteImageMap.get(fxType);
     const config = ANIMATED_SPRITE_CONFIG[fxType];
     if (!baseImage || !config) return null;
-    const territoryColor = theme.territoryColor(owner);
-    const borderColor = theme.borderColor(owner);
+    const territoryColor = owner.territoryColor();
+    const borderColor = owner.borderColor();
     const spawnHighlightColor = theme.spawnHighlightColor();
     const key = `${fxType}-${owner.id()}`;
-    let coloredCanvas = this.coloredAnimatedSpriteCache.get(key);
-    if (coloredCanvas === undefined) {
+    let coloredCanvas: HTMLCanvasElement;
+    if (this.coloredAnimatedSpriteCache.has(key)) {
+      coloredCanvas = this.coloredAnimatedSpriteCache.get(key)!;
+    } else {
       coloredCanvas = colorizeCanvas(
         baseImage,
         territoryColor,

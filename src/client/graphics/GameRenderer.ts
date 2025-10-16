@@ -1,18 +1,21 @@
+import { EventBus } from "../../core/EventBus";
+import { GameView } from "../../core/game/GameView";
+import { UserSettings } from "../../core/game/UserSettings";
+import { GameStartingModal } from "../GameStartingModal";
+import { RefreshGraphicsEvent as RedrawGraphicsEvent } from "../InputHandler";
+import { TransformHandler } from "./TransformHandler";
+import { UIState } from "./UIState";
 import { AlertFrame } from "./layers/AlertFrame";
 import { BuildMenu } from "./layers/BuildMenu";
 import { ChatDisplay } from "./layers/ChatDisplay";
 import { ChatModal } from "./layers/ChatModal";
 import { ControlPanel } from "./layers/ControlPanel";
 import { EmojiTable } from "./layers/EmojiTable";
-import { EventBus } from "../../core/EventBus";
 import { EventsDisplay } from "./layers/EventsDisplay";
 import { FPSDisplay } from "./layers/FPSDisplay";
 import { FxLayer } from "./layers/FxLayer";
 import { GameLeftSidebar } from "./layers/GameLeftSidebar";
 import { GameRightSidebar } from "./layers/GameRightSidebar";
-import { GameStartingModal } from "../GameStartingModal";
-import { GameView } from "../../core/game/GameView";
-import { GutterAdModal } from "./layers/GutterAdModal";
 import { HeadsUpMessage } from "./layers/HeadsUpMessage";
 import { Layer } from "./layers/Layer";
 import { Leaderboard } from "./layers/Leaderboard";
@@ -22,22 +25,17 @@ import { NameLayer } from "./layers/NameLayer";
 import { PlayerInfoOverlay } from "./layers/PlayerInfoOverlay";
 import { PlayerPanel } from "./layers/PlayerPanel";
 import { RailroadLayer } from "./layers/RailroadLayer";
-import { RedrawGraphicsEvent } from "../InputHandler";
 import { ReplayPanel } from "./layers/ReplayPanel";
 import { SettingsModal } from "./layers/SettingsModal";
-import { SpawnAd } from "./layers/SpawnAd";
 import { SpawnTimer } from "./layers/SpawnTimer";
 import { StructureIconsLayer } from "./layers/StructureIconsLayer";
 import { StructureLayer } from "./layers/StructureLayer";
 import { TeamStats } from "./layers/TeamStats";
 import { TerrainLayer } from "./layers/TerrainLayer";
 import { TerritoryLayer } from "./layers/TerritoryLayer";
-import { TransformHandler } from "./TransformHandler";
 import { UILayer } from "./layers/UILayer";
-import { UIState } from "./UIState";
 import { UnitDisplay } from "./layers/UnitDisplay";
 import { UnitLayer } from "./layers/UnitLayer";
-import { UserSettings } from "../../core/game/UserSettings";
 import { WinModal } from "./layers/WinModal";
 
 export function createRenderer(
@@ -48,7 +46,7 @@ export function createRenderer(
   const transformHandler = new TransformHandler(game, eventBus, canvas);
   const userSettings = new UserSettings();
 
-  const uiState = { attackRatio: 20 };
+  const uiState = { attackRatio: 20, ghostStructure: null } as UIState;
 
   //hide when the game renders
   const startingModal = document.querySelector(
@@ -56,12 +54,14 @@ export function createRenderer(
   ) as GameStartingModal;
   startingModal.hide();
 
-  // TODO maybe append this to dcoument instead of querying for them?
+  // TODO maybe append this to document instead of querying for them?
   const emojiTable = document.querySelector("emoji-table") as EmojiTable;
   if (!emojiTable || !(emojiTable instanceof EmojiTable)) {
     console.error("EmojiTable element not found in the DOM");
   }
-  emojiTable.init(transformHandler, game, eventBus);
+  emojiTable.transformHandler = transformHandler;
+  emojiTable.game = game;
+  emojiTable.initEventBus(eventBus);
 
   const buildMenu = document.querySelector("build-menu") as BuildMenu;
   if (!buildMenu || !(buildMenu instanceof BuildMenu)) {
@@ -165,6 +165,7 @@ export function createRenderer(
   }
   unitDisplay.game = game;
   unitDisplay.eventBus = eventBus;
+  unitDisplay.uiState = uiState;
 
   const playerPanel = document.querySelector("player-panel") as PlayerPanel;
   if (!(playerPanel instanceof PlayerPanel)) {
@@ -207,20 +208,6 @@ export function createRenderer(
   fpsDisplay.eventBus = eventBus;
   fpsDisplay.userSettings = userSettings;
 
-  const spawnAd = document.querySelector("spawn-ad") as SpawnAd;
-  if (!(spawnAd instanceof SpawnAd)) {
-    console.error("spawn ad not found");
-  }
-  spawnAd.g = game;
-
-  const gutterAdModal = document.querySelector(
-    "gutter-ad-modal",
-  ) as GutterAdModal;
-  if (!(gutterAdModal instanceof GutterAdModal)) {
-    console.error("gutter ad modal not found");
-  }
-  gutterAdModal.eventBus = eventBus;
-
   const alertFrame = document.querySelector("alert-frame") as AlertFrame;
   if (!(alertFrame instanceof AlertFrame)) {
     console.error("alert frame not found");
@@ -233,12 +220,12 @@ export function createRenderer(
   const layers: Layer[] = [
     new TerrainLayer(game, transformHandler),
     new TerritoryLayer(game, eventBus, transformHandler, userSettings),
-    new RailroadLayer(game),
+    new RailroadLayer(game, transformHandler),
     structureLayer,
     new UnitLayer(game, eventBus, transformHandler),
     new FxLayer(game),
-    new UILayer(game, eventBus),
-    new StructureIconsLayer(game, eventBus, transformHandler),
+    new UILayer(game, eventBus, transformHandler),
+    new StructureIconsLayer(game, eventBus, uiState, transformHandler),
     new NameLayer(game, transformHandler, eventBus),
     eventsDisplay,
     chatDisplay,
@@ -247,7 +234,7 @@ export function createRenderer(
       eventBus,
       game,
       transformHandler,
-      emojiTable,
+      emojiTable as EmojiTable,
       buildMenu,
       uiState,
       playerPanel,
@@ -266,8 +253,6 @@ export function createRenderer(
     playerPanel,
     headsUpMessage,
     multiTabModal,
-    spawnAd,
-    gutterAdModal,
     alertFrame,
     fpsDisplay,
   ];
@@ -284,16 +269,16 @@ export function createRenderer(
 }
 
 export class GameRenderer {
-  private readonly context: CanvasRenderingContext2D;
+  private context: CanvasRenderingContext2D;
 
   constructor(
-    private readonly game: GameView,
-    private readonly eventBus: EventBus,
-    private readonly canvas: HTMLCanvasElement,
+    private game: GameView,
+    private eventBus: EventBus,
+    private canvas: HTMLCanvasElement,
     public transformHandler: TransformHandler,
     public uiState: UIState,
-    private readonly layers: Layer[],
-    private readonly fpsDisplay: FPSDisplay,
+    private layers: Layer[],
+    private fpsDisplay: FPSDisplay,
   ) {
     const context = canvas.getContext("2d");
     if (context === null) throw new Error("2d context not supported");

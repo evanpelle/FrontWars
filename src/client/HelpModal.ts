@@ -1,12 +1,17 @@
-import "./components/Difficulties";
-import "./components/Maps";
 import { LitElement, html } from "lit";
 import { customElement, query } from "lit/decorators.js";
-import { getAltKey, getModifierKey, translateText, isMobileDevice } from "../client/Utils";
+import {
+  getAltKey,
+  getModifierKey,
+  translateText,
+  isMobileDevice,
+} from "../client/Utils";
+import "./components/Difficulties";
+import "./components/Maps";
 
 @customElement("help-modal")
 export class HelpModal extends LitElement {
-  @query("o-modal") private readonly modalEl!: HTMLElement & {
+  @query("o-modal") private modalEl!: HTMLElement & {
     open: () => void;
     close: () => void;
   };
@@ -25,7 +30,7 @@ export class HelpModal extends LitElement {
     super.disconnectedCallback();
   }
 
-  private readonly handleKeyDown = (e: KeyboardEvent) => {
+  private handleKeyDown = (e: KeyboardEvent) => {
     if (e.code === "Escape") {
       e.preventDefault();
       this.close();
@@ -210,7 +215,9 @@ export class HelpModal extends LitElement {
       >
         <div class="flex flex-col items-center">
           <div class="text-center text-2xl font-bold mb-4">
-            ${isMobileDevice() ? translateText("help_modal.mobile_controls") : translateText("help_modal.hotkeys")}
+            ${isMobileDevice()
+              ? translateText("help_modal.mobile_controls")
+              : translateText("help_modal.hotkeys")}
           </div>
           ${isMobileDevice() ? this.renderMobileControls() : this.renderDesktopControls()}
         </div>
@@ -523,6 +530,11 @@ export class HelpModal extends LitElement {
                 <td>${translateText("help_modal.build_port")}</td>
                 <td><div class="icon port-icon"></div></td>
                 <td>${translateText("help_modal.build_port_desc")}</td>
+              </tr>
+              <tr>
+                <td>${translateText("help_modal.build_factory")}</td>
+                <td><div class="icon factory-icon"></div></td>
+                <td>${translateText("help_modal.build_factory_desc")}</td>
               </tr>
               <tr>
                 <td>${translateText("help_modal.build_warship")}</td>

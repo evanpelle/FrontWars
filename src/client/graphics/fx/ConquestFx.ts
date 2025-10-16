@@ -1,10 +1,10 @@
-import { FadeFx, SpriteFx } from "./SpriteFx";
-import { Fx, FxType } from "./Fx";
-import { AnimatedSpriteLoader } from "../AnimatedSpriteLoader";
 import { ConquestUpdate } from "../../../core/game/GameUpdates";
 import { GameView } from "../../../core/game/GameView";
-import { TextFx } from "./TextFx";
 import { renderNumber } from "../../Utils";
+import { AnimatedSpriteLoader } from "../AnimatedSpriteLoader";
+import { Fx, FxType } from "./Fx";
+import { FadeFx, SpriteFx } from "./SpriteFx";
+import { TextFx } from "./TextFx";
 
 /**
  * Conquest FX:
@@ -18,8 +18,8 @@ export function conquestFxFactory(
 ): Fx[] {
   const conquestFx: Fx[] = [];
   const conquered = game.player(conquest.conqueredId);
-  const { x } = conquered.nameLocation();
-  const { y } = conquered.nameLocation();
+  const x = conquered.nameLocation().x;
+  const y = conquered.nameLocation().y;
 
   const swordAnimation = new SpriteFx(
     animatedSpriteLoader,

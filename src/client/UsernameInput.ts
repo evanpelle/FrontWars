@@ -1,22 +1,22 @@
 import { LitElement, html } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
+import { v4 as uuidv4 } from "uuid";
+import { translateText } from "../client/Utils";
+import { UserSettings } from "../core/game/UserSettings";
 import {
   MAX_USERNAME_LENGTH,
   validateUsername,
 } from "../core/validations/username";
-import { customElement, property, state } from "lit/decorators.js";
-import { UserSettings } from "../core/game/UserSettings";
-import { translateText } from "../client/Utils";
-import { v4 as uuidv4 } from "uuid";
 import { CrazySDK } from "./CrazyGamesSDK";
 
-const usernameKey = "username";
+const usernameKey: string = "username";
 
 @customElement("username-input")
 export class UsernameInput extends LitElement {
-  @state() private username = "";
-  @property({ type: String }) validationError = "";
-  private _isValid = true;
-  private readonly userSettings: UserSettings = new UserSettings();
+  @state() private username: string = "";
+  @property({ type: String }) validationError: string = "";
+  private _isValid: boolean = true;
+  private userSettings: UserSettings = new UserSettings();
 
   // Remove static styles since we're using Tailwind
 
@@ -44,10 +44,7 @@ export class UsernameInput extends LitElement {
         @change=${this.handleChange}
         placeholder="${translateText("username.enter_username")}"
         maxlength="${MAX_USERNAME_LENGTH}"
-        class="w-full px-4 py-2 border border-gray-300 rounded-xl shadow-sm
-        text-2xl text-center focus:outline-none focus:ring-2
-        focus:ring-blue-500 focus:border-blue-500 dark:border-gray-300/60
-        dark:bg-gray-700 dark:text-white"
+        class="b-button border rounded-xl w-full px-4 py-2 text-2xl text-center"
       />
       ${this.validationError
         ? html`<div
@@ -77,7 +74,10 @@ export class UsernameInput extends LitElement {
 
   private async getStoredUsername(): Promise<string> {
     const storedUsername = localStorage.getItem(usernameKey);
-    if (CrazySDK.isCrazyGames && !(storedUsername && !storedUsername.includes("Anon"))) {
+    if (
+      CrazySDK.isCrazyGames &&
+      !(storedUsername && !storedUsername.includes("Anon"))
+    ) {
       const username = await CrazySDK.getUsername();
       if (username) {
         this.storeUsername(username);

@@ -1,47 +1,45 @@
 import { LitElement, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { renderNumber, renderTroops } from "../../Utils";
-import { AttackRatioEvent } from "../../InputHandler";
-import { ClientID } from "../../../core/Schemas";
-import { EventBus } from "../../../core/EventBus";
-import { GameView } from "../../../core/game/GameView";
-import { Gold } from "../../../core/game/Game";
-import { Layer } from "./Layer";
-import { UIState } from "../UIState";
 import { translateText } from "../../../client/Utils";
+import { EventBus } from "../../../core/EventBus";
+import { Gold } from "../../../core/game/Game";
+import { GameView } from "../../../core/game/GameView";
+import { ClientID } from "../../../core/Schemas";
+import { AttackRatioEvent } from "../../InputHandler";
+import { renderNumber, renderTroops } from "../../Utils";
+import { UIState } from "../UIState";
+import { Layer } from "./Layer";
 
 @customElement("control-panel")
 export class ControlPanel extends LitElement implements Layer {
-  public game: GameView | undefined;
-  public clientID: ClientID | undefined;
-  public eventBus: EventBus | undefined;
-  public uiState: UIState | undefined;
+  public game: GameView;
+  public clientID: ClientID;
+  public eventBus: EventBus;
+  public uiState: UIState;
 
   @state()
-  private attackRatio = 0.2;
+  private attackRatio: number = 0.2;
 
   @state()
-  private _maxTroops = 0;
+  private _maxTroops: number;
 
   @state()
-  private troopRate = 0;
+  private troopRate: number;
 
   @state()
-  private _troops = 0;
+  private _troops: number;
 
   @state()
   private _isVisible = false;
 
   @state()
-  private _gold: Gold = 0n;
+  private _gold: Gold;
 
-  private _troopRateIsIncreasing = true;
+  private _troopRateIsIncreasing: boolean = true;
 
-  private _lastTroopIncreaseRate = 0;
+  private _lastTroopIncreaseRate: number;
 
   init() {
-    if (!this.uiState) throw new Error("Not initialized");
-    if (!this.eventBus) throw new Error("Not initialized");
     this.attackRatio = Number(
       localStorage.getItem("settings.attackRatio") ?? "0.2",
     );
@@ -73,7 +71,6 @@ export class ControlPanel extends LitElement implements Layer {
   }
 
   tick() {
-    if (!this.game) return;
     if (!this._isVisible && !this.game.inSpawnPhase()) {
       this.setVisibile(true);
     }
@@ -97,8 +94,7 @@ export class ControlPanel extends LitElement implements Layer {
   }
 
   private updateTroopIncrease() {
-    if (this.game === undefined) return;
-    const player = this.game.myPlayer();
+    const player = this.game?.myPlayer();
     if (player === null) return;
     const troopIncreaseRate = this.game.config().troopIncreaseRate(player);
     this._troopRateIsIncreasing =
@@ -107,7 +103,6 @@ export class ControlPanel extends LitElement implements Layer {
   }
 
   onAttackRatioChange(newRatio: number) {
-    if (this.uiState === undefined) return;
     this.uiState.attackRatio = newRatio;
   }
 

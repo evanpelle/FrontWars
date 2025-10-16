@@ -1,18 +1,19 @@
-import { Cell, UnitType } from "../../../core/game/Game";
-import { Colord, colord } from "colord";
-import { GameView, UnitView } from "../../../core/game/GameView";
-import { euclDistFN, isometricDistFN } from "../../../core/game/GameMap";
-import { EventBus } from "../../../core/EventBus";
-import { GameUpdateType } from "../../../core/game/GameUpdates";
-import { Layer } from "./Layer";
-import SAMMissileIcon from "../../../../resources/non-commercial/images/buildings/silo4.png";
+import { colord, Colord } from "colord";
 import { Theme } from "../../../core/configuration/Config";
+import { EventBus } from "../../../core/EventBus";
 import { TransformHandler } from "../TransformHandler";
-import anchorIcon from "../../../../resources/non-commercial/images/buildings/port1.png";
-import cityIcon from "../../../../resources/non-commercial/images/buildings/cityAlt1.png";
-import factoryIcon from "../../../../resources/non-commercial/images/buildings/factoryAlt1.png";
-import missileSiloIcon from "../../../../resources/non-commercial/images/buildings/silo1.png";
-import shieldIcon from "../../../../resources/non-commercial/images/buildings/fortAlt3.png";
+import { Layer } from "./Layer";
+
+import cityIcon from "../../../../resources/images/buildings/cityAlt1.png";
+import factoryIcon from "../../../../resources/images/buildings/factoryAlt1.png";
+import shieldIcon from "../../../../resources/images/buildings/fortAlt3.png";
+import anchorIcon from "../../../../resources/images/buildings/port1.png";
+import missileSiloIcon from "../../../../resources/images/buildings/silo1.png";
+import SAMMissileIcon from "../../../../resources/images/buildings/silo4.png";
+import { Cell, UnitType } from "../../../core/game/Game";
+import { euclDistFN, isometricDistFN } from "../../../core/game/GameMap";
+import { GameUpdateType } from "../../../core/game/GameUpdates";
+import { GameView, UnitView } from "../../../core/game/GameView";
 
 const underConstructionColor = colord({ r: 150, g: 150, b: 150 });
 
@@ -22,19 +23,19 @@ const BASE_TERRITORY_RADIUS = 13.5;
 const RADIUS_SCALE_FACTOR = 0.5;
 const ZOOM_THRESHOLD = 4.3; // below this zoom level, structures are not rendered
 
-type UnitRenderConfig = {
+interface UnitRenderConfig {
   icon: string;
   borderRadius: number;
   territoryRadius: number;
-};
+}
 
 export class StructureLayer implements Layer {
-  private canvas: HTMLCanvasElement | undefined;
-  private context: CanvasRenderingContext2D | undefined;
-  private readonly unitIcons: Map<string, HTMLImageElement> = new Map();
-  private readonly theme: Theme;
-  private readonly tempCanvas: HTMLCanvasElement;
-  private readonly tempContext: CanvasRenderingContext2D;
+  private canvas: HTMLCanvasElement;
+  private context: CanvasRenderingContext2D;
+  private unitIcons: Map<string, HTMLImageElement> = new Map();
+  private theme: Theme;
+  private tempCanvas: HTMLCanvasElement;
+  private tempContext: CanvasRenderingContext2D;
 
   // Configuration for supported unit types only
   private readonly unitConfigs: Partial<Record<UnitType, UnitRenderConfig>> = {
@@ -71,9 +72,9 @@ export class StructureLayer implements Layer {
   };
 
   constructor(
-    private readonly game: GameView,
-    private readonly eventBus: EventBus,
-    private readonly transformHandler: TransformHandler,
+    private game: GameView,
+    private eventBus: EventBus,
+    private transformHandler: TransformHandler,
   ) {
     this.theme = game.config().theme();
     this.tempCanvas = document.createElement("canvas");
@@ -145,7 +146,6 @@ export class StructureLayer implements Layer {
   }
 
   renderLayer(context: CanvasRenderingContext2D) {
-    if (this.canvas === undefined) throw new Error("Not initialized");
     if (
       this.transformHandler.scale <= ZOOM_THRESHOLD ||
       !this.game.config().userSettings()?.structureSprites()
@@ -190,7 +190,7 @@ export class StructureLayer implements Layer {
         new Cell(this.game.x(tile), this.game.y(tile)),
         unit.type() === UnitType.Construction
           ? underConstructionColor
-          : this.theme.territoryColor(unit.owner()),
+          : unit.owner().territoryColor(),
         130,
       );
     }
@@ -203,7 +203,7 @@ export class StructureLayer implements Layer {
 
     const config = this.unitConfigs[unitType];
     let icon: HTMLImageElement | undefined;
-    let borderColor = this.theme.borderColor(unit.owner());
+    let borderColor = unit.owner().borderColor();
 
     // Handle cooldown states and special icons
     if (unit.type() === UnitType.Construction) {
@@ -244,8 +244,9 @@ export class StructureLayer implements Layer {
     height: number,
     unit: UnitView,
   ) {
-    let color = this.theme.borderColor(unit.owner());
+    let color = unit.owner().borderColor();
     if (unit.type() === UnitType.Construction) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       color = underConstructionColor;
     }
 
@@ -265,19 +266,16 @@ export class StructureLayer implements Layer {
     this.tempContext.drawImage(image, 0, 0, width * 2, height * 2);
 
     // Draw the final result to the main canvas
-    if (this.context === undefined) throw new Error("Not initialized");
     this.context.drawImage(this.tempCanvas, startX * 2, startY * 2);
   }
 
   paintCell(cell: Cell, color: Colord, alpha: number) {
     this.clearCell(cell);
-    if (this.context === undefined) throw new Error("Not initialized");
     this.context.fillStyle = color.alpha(alpha / 255).toRgbString();
     this.context.fillRect(cell.x * 2, cell.y * 2, 2, 2);
   }
 
   clearCell(cell: Cell) {
-    if (this.context === undefined) throw new Error("Not initialized");
     this.context.clearRect(cell.x * 2, cell.y * 2, 2, 2);
   }
 }

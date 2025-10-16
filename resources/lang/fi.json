@@ -9,7 +9,7 @@
     "close": "Sulje"
   },
   "main": {
-    "title": "FrontWars (ALPHA)",
+    "title": "FrontWars",
     "join_discord": "Liity Discordiin!",
     "login_discord": "Kirjaudu sisään Discordilla",
     "checking_login": "Tarkistetaan sisäänkirjautumista...",
@@ -26,7 +26,7 @@
     "terms_of_service": "Käyttöehdot"
   },
   "news": {
-    "full_changelog": "Katso koko muutosloki",
+    "see_all_releases": "Katso kaikki julkaisut",
     "github_link": "GitHubissa",
     "title": "Päivitystiedot"
   },
@@ -43,6 +43,7 @@
     "action_move_camera": "Liikuta kameraa",
     "action_ratio_change": "Vähennä/Lisää hyökkäyksen osuutta",
     "action_reset_gfx": "Palauta grafiikat",
+    "action_auto_upgrade": "Päivitä lähin rakennus automaattisesti",
     "ui_section": "Pelin käyttöliittymä",
     "ui_leaderboard": "Pistetaulukko",
     "ui_your_team": "Tiimisi: ",
@@ -51,7 +52,6 @@
     "ui_control_desc": "Ohjauspaneeli sisältää seuraavat toiminnot:",
     "ui_pop": "Asukasluku - Asukkaiden määrä, enimmäisasukaslukusi ja vauhti, jolla saat asukkaita lisää.",
     "ui_gold": "Kulta - Kullan määrä ja kullan saantinopeus.",
-    "ui_troops_workers": "Sotilaat ja työntekijät - Kohdennettujen sotilaiden ja työntekijöiden määrä. Joukkoja käytetään hyökkäämiseen tai puolustamiseen. Työntekijöitä käytetään kullan tuottamiseen. Voit säädellä joukkojen ja työntekijöiden määrää liukusäätimellä.",
     "ui_attack_ratio": "Hyökkäyksen osuus - Määrä joukkoja, jota käytetään hyökätessäsi. Voit säätää osuutta liukusäätimellä. Jos sinulla on enemmän hyökkääviä joukkoja kuin puolustavia joukkoja, menetät vähemmän joukkoja hyökkäyksessä. Jos sinulla on vähemmän hyökkääviä joukkoja kuin puolustavia joukkoja, hyökkäävät joukot vahingoittuvat enemmän. Tämä ilmiö ei ylitä suhdetta 2:1.",
     "ui_events": "Tapahtumapaneeli",
     "ui_events_desc": "Tapahtumapaneelista näkee uusimmat tapahtumat, kutsut ja pikaviestit. Esimerkiksi:",
@@ -70,6 +70,7 @@
     "radial_title": "Ympyrävalikko",
     "radial_desc": "Napsauttamalla hiiren oikeaa painiketta (tai koskettamalla mobiililaitteella) avataan ympyrävalikko. Napsauttamalla hiiren oikeaa painiketta sen ulkopuolella suljet sen. Ympyrävalikosta näet:",
     "radial_build": "Avaa rakennusvalikko.",
+    "radial_attack": "Avaa hyökkäysvalikko",
     "radial_info": "Avaa tietopaneeli.",
     "radial_boat": "Lähetä vene (kuljetusalus) hyökkäämään valittuun sihaintiin. Saatavilla vain, jos sinulla on pääsy vesistöön.",
     "radial_close": "Sulje valikko.",
@@ -93,11 +94,11 @@
     "build_city": "Kaupunki",
     "build_city_desc": "Lisää enimmäisväkilukuasi. Hyödyllinen, kun et voi laajentaa aluettasi tai, jos haluat muuten lisätä väkilukuasi.",
     "build_factory": "Tehdas",
-    "build_factory_desc": "Luo rautateitä automaattisesti lähellä rakennuksia ja lähettää junia satunnaisesti.",
+    "build_factory_desc": "Automaattisesti rakentaa rautateitä läheisiin kaupunkeihin, satamiin ja muihin tehtaisiin, myös ystävällisten naapurien puolelle. Junia lähtee säännöllisesti ja ne antavat sinulle aina saman määrän kultaa jokaisesta rakennuksesta, jonka ohi ne kulkevat. Saat ylimääräistä kultaa, kun junat käyvät naapurien rakennuksissa.",
     "build_defense": "Puolustustorni",
     "build_defense_desc": "Lisää puolustuksen tehokkuutta rajojen läheisyydessä. Vihollisten hyökkäykset puolustustornin lähellä ovat hitaampia ja niissä on enemmän uhreja.",
     "build_port": "Satama",
-    "build_port_desc": "Voidaan rakentaa vain veden läheisyyteen. Mahdollistaa sotalaivojen rakentamisen. Lähettää kauppa-aluksia automaattisesti sinun satamista muiden pelaajien satamiin (paitsi, jos kauppa on pysäytetty). Kauppa-alukset tuovat kultaa. Kaupankäynti pysähtyy automaattisesti, kun hyökkäät tai, kun pelaaja hyökkää sinuun. Se palaa 5 minuutin päästä tai, jos teistä tulee liittolaisia. Voit säätää manuaalisesti kaupankäyntiä painamalla \"Lopeta kaupankäynti\" tai \"Aloita kaupankäynti\".",
+    "build_port_desc": "Voidaan rakentaa vain veden läheisyyteen. Lähettää kauppa-aluksia automaattisesti sinun satamista muiden pelaajien satamiin (paitsi, jos kauppa on pysäytetty). Kauppa-alukset tuovat kultaa. Kaupankäynti pysähtyy automaattisesti, kun hyökkäät tai, kun pelaaja hyökkää sinuun. Se palaa 5 minuutin päästä tai, jos teistä tulee liittolaisia. Voit säätää manuaalisesti kaupankäyntiä päälle/pois painamalla \"Lopeta kaupankäynti\" tai \"Aloita kaupankäynti\".",
     "build_warship": "Sota-alus",
     "build_warship_desc": "Partioivat alueella, vangiten vihollisen kauppa-aluksia ja tuhoten heidän veneitään (kuljetusaluksia) ja sota-aluksiaan. Lähtee lähimmästä satamasta ja partioi aluella, jota painoit rakentaaksesi sen. Voit hallita sotalaivoja napsauttamalla niitä ja valitsemalla hyökkäyksen (katso toiminto \"Hyökkäys\" pikanäppäimistä) ja sitten napsauttamalla ja valitsemalla hyökkäyksen alueelle, jonne haluat niiden siirtyvän.",
     "build_silo": "Ohjussiilo",
@@ -129,10 +130,23 @@
     "disable_nations": "Poista kansakunnat",
     "instant_build": "Välitön rakentaminen",
     "infinite_gold": "Loputon kulta",
+    "donate_gold": "Lahjoita kultaa",
     "infinite_troops": "Loputtomat joukot",
+    "donate_troops": "Lahjoita joukkoja",
     "disable_nukes": "Poista ydinohjukset käytöstä",
     "enables_title": "Säädä asetuksia",
     "start": "Aloita peli"
+  },
+  "token_login_modal": {
+    "title": "Kirjaudutaan...",
+    "logging_in": "Kirjaudutaan...",
+    "success": "Kirjauduttu onnistuneesti käyttäjällä {email}!"
+  },
+  "account_modal": {
+    "title": "Tili",
+    "logged_in_as": "Kirjauduttu käyttäjällä {email}",
+    "logged_in_with_discord": "Kirjauduttu sisään Discordilla",
+    "recovery_email_sent": "Palautussähköposti lähetetty kohteeseen {email}"
   },
   "map": {
     "map": "Kartta",
@@ -162,7 +176,9 @@
     "baikal": "Baikal",
     "halkidiki": "Halkidiki",
     "straitofgibraltar": "Gibraltarinsalmi",
-    "italia": "Italia"
+    "italia": "Italia",
+    "yenisei": "Yenisei",
+    "pluto": "Pluto"
   },
   "map_categories": {
     "continental": "Mantereet",
@@ -208,12 +224,15 @@
     "disable_nations": "Poista kansakunnat käytöstä",
     "instant_build": "Välitön rakentaminen",
     "infinite_gold": "Loputon kulta",
+    "donate_gold": "Lahjoita kultaa",
     "infinite_troops": "Loputtomat joukot",
+    "donate_troops": "Lahjoita joukkoja",
     "enables_title": "Säädä asetuksia",
     "player": "Pelaaja",
     "players": "pelaajaa",
     "waiting": "Odotetaan pelaajia...",
-    "start": "Aloita peli"
+    "start": "Aloita peli",
+    "host_badge": "Isäntä"
   },
   "team_colors": {
     "red": "Punainen",
@@ -231,9 +250,9 @@
   },
   "difficulty": {
     "difficulty": "Vaikeustaso",
-    "Relaxed": "Rento",
-    "Balanced": "Tasapainotettu",
-    "Intense": "Vaikea",
+    "Easy": "Rento",
+    "Medium": "Tasapainotettu",
+    "Hard": "Vaikea",
     "Impossible": "Mahdoton"
   },
   "game_mode": {
@@ -273,9 +292,15 @@
     "special_effects_desc": "Valitse, ovatko erikoistehosteet päällä. Poista ne käytöstä parantaaksesi suorituskykyä",
     "special_effects_enabled": "Erikoistehosteet käytössä",
     "special_effects_disabled": "Erikoistehosteet poistettu käytöstä",
+    "structure_sprites_label": "Rakennuskuvitukset",
+    "structure_sprites_desc": "Säädä rakennuskuvituksia päälle/pois",
+    "structure_sprites_enabled": "Rakennuskuvitukset päällä",
+    "structure_sprites_disabled": "Rakennuskuvitukset pois käytöstä",
     "anonymous_names_label": "Piilotetut nimet",
     "anonymous_names_desc": "Korvaa pelaajien oikeat nimet satunnaisilla nimillä.",
     "anonymous_names_enabled": "Anonyymit nimet käytössä",
+    "lobby_id_visibility_label": "Piiloitetut aulojen tunnukset",
+    "lobby_id_visibility_desc": "Piilota aulan tunnus yksityisen aulan luomisessa",
     "real_names_shown": "Todelliset nimet näytetään",
     "left_click_label": "Hiiren vasen nappi valikon avaamiseen",
     "left_click_desc": "Kun päällä, hiiren vasen nappi avaa valikon, mistä voit hyökätä painamalla miekkaa. Kun pois päältä, vasen nappi hyökkää suoraan.",
@@ -284,10 +309,11 @@
     "right_click_opens_menu": "Hiiren oikea nappi avaa valikon",
     "attack_ratio_label": "⚔️ Hyökkäyksen osuus",
     "attack_ratio_desc": "Mikä osuus joukoistasi lähetetään hyökkäykseen (1–100%)",
-    "troop_ratio_label": "🪖🛠️ Joukkojen ja työntekijöiden suhde",
     "troop_ratio_desc": "Säädä joukkojen (sotia varten) ja työntekijöiden (tekevät kultaa) määrää (1 - 100%)",
     "territory_patterns_label": "Aluekuviot",
     "territory_patterns_desc": "Valitse näkyvätkö aluekuviot pelissä",
+    "performance_overlay_label": "Suorituskykypeittokuva",
+    "performance_overlay_desc": "Säädä suorituskykypeittokuvaa päälle tai pois. Kun päällä, suorituspeittokuva näytetään. Paina shift-D pelin aikana näyttääksesi tai piiloittaaksesi sen.",
     "easter_writing_speed_label": "Kirjoittamisen nopeuskerroin",
     "easter_writing_speed_desc": "Säädä kuinka nopeasti teeskentelet koodaavasi (x1–x100)",
     "easter_bug_count_label": "Vikojen määrä",
@@ -351,26 +377,31 @@
     },
     "help": {
       "troops": "Lahjoita minulle joukkoja!",
+      "troops_frontlines": "Lähetä joukkoja etulinjoille!",
       "gold": "Lahjoita minulle kultaa!",
       "no_attack": "Älä hyökkää minuun!",
       "sorry_attack": "Anteeksi, en tarkoittanut hyökätä.",
       "alliance": "Liittoudutaanko?",
       "help_defend": "Auta minua puolustautumaan pelaajaa [P1] vastaan!",
-      "team_up": "Lyöttäydytään pelaaja [P1] vastaan!"
+      "trade_partners": "Olkaamme kauppakumppaneita!"
     },
     "attack": {
       "attack": "Hyökkää pelaajaan [P1]!",
       "mirv": "Laukaise MIRV pelaajaan [P1]!",
       "focus": "Keskitä tuli pelaajaan [P1]!",
-      "finish": "Tapetaan [P1]!"
+      "finish": "Tapetaan [P1]!",
+      "build_warships": "Rakenna sotalaivoja!"
     },
     "defend": {
       "defend": "Puolusta pelaajaa [P1]!",
+      "defend_from": "Puolustaudu pelaajalta [P1]!",
       "dont_attack": "Älä hyökkää pelaajaan [P1]!",
-      "ally": "[P1] on minun liittolaiseni!"
+      "ally": "[P1] on minun liittolaiseni!",
+      "build_posts": "Rakenna puolustustorneja!"
     },
     "greet": {
       "hello": "Terve!",
+      "good_job": "Hyvää työtä!",
       "good_luck": "Lykkyä tykö!",
       "have_fun": "Pidä hauskaa!",
       "gg": "GG!",
@@ -381,13 +412,19 @@
       "thanks": "Kiitos!",
       "oops": "Hups, väärä nappi!",
       "trust_me": "Voit luottaa minuun. Lupaan sen!",
-      "trust_broken": "Luotin sinuun..."
+      "trust_broken": "Luotin sinuun...",
+      "ruining_games": "Olet tuhoamassa molempien pelit.",
+      "dont_do_that": "Älä tee sitä!",
+      "same_team": "Olen sinun puolellasi!"
     },
     "misc": {
       "go": "Mennään!",
       "strategy": "Hieno strategia!",
       "fun": "Tämä peli on hauska!",
-      "pr": "Milloin vetopyyntöni vihdoin yhdistetään...?"
+      "team_up": "Lyöttäydytään pelaaja [P1] vastaan!",
+      "pr": "Milloin vetopyyntöni vihdoin yhdistetään...?",
+      "build_closer": "Rakenna lähemmäs saadaksesi junia!",
+      "coastline": "Sallikaa minun saada rantaviivaa."
     },
     "warnings": {
       "strong": "[P1] on voimakas.",
@@ -398,10 +435,14 @@
       "has_allies": "Pelaajalla [P1] on monia liittolaisia.",
       "no_allies": "Pelaajalla [P1] ei ole iittolaisia.",
       "betrayed": "[P1] petti liittolaisensa!",
+      "betrayed_me": "[P1] petti minut!",
       "getting_big": "[P1] kasvaa liian nopeasti!",
       "danger_base": "[P1] on suojaamatta!",
       "saving_for_mirv": "[P1] säästää MIRVin laukaisemiseen kultaa.",
-      "mirv_ready": "Pelaajalla [P1] on tarpeeksi kultaa MIRVin laukaisemiseen!"
+      "mirv_ready": "Pelaajalla [P1] on tarpeeksi kultaa MIRVin laukaisemiseen!",
+      "snowballing": "[P1] kasvaa liian nopeasti!",
+      "cheating": "[P1] huijaa!",
+      "stop_trading": "Lopeta kaupankäynti pelaaja [P1] kanssa!"
     }
   },
   "build_menu": {
@@ -420,6 +461,8 @@
     "not_enough_money": "Ei tarpeeksi rahaa"
   },
   "win_modal": {
+    "support_openfront": "Tue FrontWarsia!",
+    "territory_pattern": "Osta aluekuvio tukeaksesi FrontWarsia!",
     "died": "Sinä kuolit",
     "your_team": "Joukkueesi voitti!",
     "other_team": "{team} joukkue on voittanut!",
@@ -437,7 +480,13 @@
     "team": "Tiimi",
     "owned": "Maata",
     "gold": "Kultaa",
-    "troops": "Joukkoja"
+    "troops": "Joukkoja",
+    "launchers": "Ohjussiilot",
+    "sams": "Ilmatorjunta",
+    "warships": "Sotalaivat",
+    "cities": "Kaupungit",
+    "show_control": "Näytä kontrolli",
+    "show_units": "Näytä yksiköt"
   },
   "player_info_overlay": {
     "type": "Tyyppi",
@@ -478,7 +527,8 @@
     "accept_alliance": "Hyväksy",
     "reject_alliance": "Hylkää",
     "alliance_renewed": "Liittosi pelaajan {name} kanssa sai jatkoa",
-    "ignore": "Sivuuta"
+    "ignore": "Sivuuta",
+    "unit_voluntarily_deleted": "Yksikkö poistettu vapaaehtoisesti"
   },
   "unit_info_modal": {
     "structure_info": "Rakennuksen tiedot",
@@ -497,10 +547,8 @@
     "default": "Oletus"
   },
   "control_panel": {
-    "pop": "Asukasluku",
     "gold": "Kultaa",
     "troops": "Joukkoja",
-    "workers": "Työntekijöitä",
     "attack_ratio": "Hyökkäyksen osuus"
   },
   "player_panel": {
@@ -516,7 +564,8 @@
     "yes": "Kyllä",
     "no": "Ei",
     "none": "Tyhjä",
-    "alliances": "Liittoumat"
+    "alliances": "Liittoumat",
+    "flag": "Lippu"
   },
   "replay_panel": {
     "replay_speed": "Uusinnan nopeus",
@@ -573,9 +622,15 @@
       "openfront": "FrontWars",
       "t_rex": "T-Rex",
       "embelem": "Tunnus",
+      "contributor": "Avustaja",
       "grogu_head": "Grogun pää",
       "grogu": "Grogu"
     }
+  },
+  "flag_input": {
+    "title": "Valitse lippu",
+    "button_title": "Valitse lippu!",
+    "search_flag": "Hae..."
   },
   "spawn_ad": {
     "loading": "Ladataan mainosta..."
@@ -585,5 +640,9 @@
     "redirecting": "Sinut uudelleenohjataan...",
     "not_authorized": "Sinulla ei ole oikeutta käyttää tätä verkkosivustoa.",
     "contact_admin": "Jos uskot näkeväsi tämän viestin virheenä, ota yhteyttä sivuston ylläpitoon."
+  },
+  "radial_menu": {
+    "delete_unit_title": "Poista yksikkö",
+    "delete_unit_description": "Napsauta poistaaksesi lähimmän yksikön"
   }
 }

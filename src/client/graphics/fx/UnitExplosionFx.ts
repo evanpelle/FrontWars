@@ -1,6 +1,6 @@
-import { Fx, FxType } from "./Fx";
-import { AnimatedSpriteLoader } from "../AnimatedSpriteLoader";
 import { GameView } from "../../../core/game/GameView";
+import { AnimatedSpriteLoader } from "../AnimatedSpriteLoader";
+import { Fx, FxType } from "./Fx";
 import { SpriteFx } from "./SpriteFx";
 import { Timeline } from "./Timeline";
 
@@ -8,13 +8,13 @@ import { Timeline } from "./Timeline";
  * Explosion Effect: a few timed explosions
  */
 export class UnitExplosionFx implements Fx {
-  private readonly timeline = new Timeline();
-  private readonly explosions: Fx[] = [];
+  private timeline = new Timeline();
+  private explosions: Fx[] = [];
 
   constructor(
     animatedSpriteLoader: AnimatedSpriteLoader,
-    private readonly x: number,
-    private readonly y: number,
+    private x: number,
+    private y: number,
     game: GameView,
   ) {
     const config = [

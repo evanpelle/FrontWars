@@ -1,29 +1,25 @@
+import { LitElement, html } from "lit";
+import { customElement, query, state } from "lit/decorators.js";
+import { translateText } from "../client/Utils";
+import { GameInfo, GameRecordSchema } from "../core/Schemas";
+import { generateID } from "../core/Util";
+import { getServerConfigFromClient } from "../core/configuration/ConfigLoader";
+import { JoinLobbyEvent } from "./Main";
 import "./components/baseComponents/Button";
 import "./components/baseComponents/Modal";
-import { GameInfo, GameInfoSchema } from "../core/Schemas";
-import { LitElement, html } from "lit";
-import {
-  WorkerApiArchivedGameLobbySchema,
-  WorkerApiGameIdExistsSchema,
-} from "../core/WorkerSchemas";
-import { customElement, query, state } from "lit/decorators.js";
-import { JoinLobbyEvent } from "./Main";
-import { getClientID } from "../core/Util";
-import { getServerConfigFromClient } from "../core/configuration/ConfigLoader";
-import { translateText } from "../client/Utils";
-
+import { getApiBase } from "./jwt";
 @customElement("join-private-lobby-modal")
 export class JoinPrivateLobbyModal extends LitElement {
-  @query("o-modal") private readonly modalEl!: HTMLElement & {
+  @query("o-modal") private modalEl!: HTMLElement & {
     open: () => void;
     close: () => void;
   };
-  @query("#lobbyIdInput") private readonly lobbyIdInput!: HTMLInputElement;
-  @state() private message = "";
+  @query("#lobbyIdInput") private lobbyIdInput!: HTMLInputElement;
+  @state() private message: string = "";
   @state() private hasJoined = false;
   @state() private players: string[] = [];
 
-  private playersInterval: ReturnType<typeof setTimeout> | null = null;
+  private playersInterval: NodeJS.Timeout | null = null;
 
   connectedCallback() {
     super.connectedCallback();
@@ -35,7 +31,7 @@ export class JoinPrivateLobbyModal extends LitElement {
     super.disconnectedCallback();
   }
 
-  private readonly handleKeyDown = (e: KeyboardEvent) => {
+  private handleKeyDown = (e: KeyboardEvent) => {
     if (e.code === "Escape") {
       e.preventDefault();
       this.close();
@@ -67,13 +63,7 @@ export class JoinPrivateLobbyModal extends LitElement {
               xmlns="http://www.w3.org/2000/svg"
             >
               <path
-                d="M 15 3 C 13.742188 3 12.847656 3.890625 12.40625 5 L 5 5 L 5
-                28 L 13 28 L 13 30 L 27 30 L 27 14 L 25 14 L 25 5 L 17.59375 5
-                C 17.152344 3.890625 16.257813 3 15 3 Z M 15 5 C 15.554688 5 16
-                5.445313 16 6 L 16 7 L 19 7 L 19 9 L 11 9 L 11 7 L 14 7 L 14 6
-                C 14 5.445313 14.445313 5 15 5 Z M 7 7 L 9 7 L 9 11 L 21 11 L
-                21 7 L 23 7 L 23 14 L 13 14 L 13 26 L 7 26 Z M 15 16 L 25 16 L
-                25 28 L 15 28 Z"
+                d="M 15 3 C 13.742188 3 12.847656 3.890625 12.40625 5 L 5 5 L 5 28 L 13 28 L 13 30 L 27 30 L 27 14 L 25 14 L 25 5 L 17.59375 5 C 17.152344 3.890625 16.257813 3 15 3 Z M 15 5 C 15.554688 5 16 5.445313 16 6 L 16 7 L 19 7 L 19 9 L 11 9 L 11 7 L 14 7 L 14 6 C 14 5.445313 14.445313 5 15 5 Z M 7 7 L 9 7 L 9 11 L 21 11 L 21 7 L 23 7 L 23 14 L 13 14 L 13 26 L 7 26 Z M 15 16 L 25 16 L 25 28 L 15 28 Z"
               ></path>
             </svg>
           </button>
@@ -116,7 +106,7 @@ export class JoinPrivateLobbyModal extends LitElement {
     return this; // light DOM
   }
 
-  public open(id = "") {
+  public open(id: string = "") {
     this.modalEl?.open();
     if (id) {
       this.setLobbyId(id);
@@ -190,10 +180,19 @@ export class JoinPrivateLobbyModal extends LitElement {
       if (gameExists) return;
 
       // If not active, check archived games
-      const archivedGame = await this.checkArchivedGame(lobbyId);
-      if (archivedGame) return;
-
-      this.message = `${translateText("private_lobby.not_found")}`;
+      switch (await this.checkArchivedGame(lobbyId)) {
+        case "success":
+          return;
+        case "not_found":
+          this.message = `${translateText("private_lobby.not_found")}`;
+          return;
+        case "version_mismatch":
+          this.message = `${translateText("private_lobby.version_mismatch")}`;
+          return;
+        case "error":
+          this.message = `${translateText("private_lobby.error")}`;
+          return;
+      }
     } catch (error) {
       console.error("Error checking lobby existence:", error);
       this.message = `${translateText("private_lobby.error")}`;
@@ -209,8 +208,7 @@ export class JoinPrivateLobbyModal extends LitElement {
       headers: { "Content-Type": "application/json" },
     });
 
-    const json = await response.json();
-    const gameInfo = WorkerApiGameIdExistsSchema.parse(json);
+    const gameInfo = await response.json();
 
     if (gameInfo.exists) {
       this.message = translateText("private_lobby.joined_waiting");
@@ -220,7 +218,7 @@ export class JoinPrivateLobbyModal extends LitElement {
         new CustomEvent("join-lobby", {
           detail: {
             gameID: lobbyId,
-            clientID: getClientID(lobbyId),
+            clientID: generateID(),
           } as JoinLobbyEvent,
           bubbles: true,
           composed: true,
@@ -234,48 +232,43 @@ export class JoinPrivateLobbyModal extends LitElement {
     return false;
   }
 
-  private async checkArchivedGame(lobbyId: string): Promise<boolean> {
-    const config = await getServerConfigFromClient();
-    const archiveUrl = `/${config.workerPath(lobbyId)}/api/archived_game/${lobbyId}`;
-
-    const archiveResponse = await fetch(archiveUrl, {
+  private async checkArchivedGame(
+    lobbyId: string,
+  ): Promise<"success" | "not_found" | "version_mismatch" | "error"> {
+    console.log("archiveResponse", `${getApiBase()}/game/${lobbyId}`);
+    const archiveResponse = await fetch(`${getApiBase()}/game/${lobbyId}`, {
       method: "GET",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
     });
+    console.log("archivePromise", archiveResponse);
 
-    const json = await archiveResponse.json();
-    const archiveData = WorkerApiArchivedGameLobbySchema.parse(json);
-
-    if (
-      archiveData.success === false &&
-      archiveData.error === "Version mismatch"
-    ) {
-      console.warn(
-        `Git commit hash mismatch for game ${lobbyId}`,
-        archiveData.details,
-      );
-      this.message =
-        "This game was created with a different version. Cannot join.";
-      return true;
+    if (archiveResponse.status === 404) {
+      return "not_found";
+    }
+    if (archiveResponse.status !== 200) {
+      return "error";
     }
 
-    if (archiveData.exists) {
-      this.dispatchEvent(
-        new CustomEvent("join-lobby", {
-          detail: {
-            gameID: lobbyId,
-            gameRecord: archiveData.gameRecord,
-            clientID: getClientID(lobbyId),
-          } as JoinLobbyEvent,
-          bubbles: true,
-          composed: true,
-        }),
-      );
-
-      return true;
+    const archiveData = await archiveResponse.json();
+    const parsed = GameRecordSchema.safeParse(archiveData);
+    if (!parsed.success) {
+      return "version_mismatch";
     }
 
-    return false;
+    this.dispatchEvent(
+      new CustomEvent("join-lobby", {
+        detail: {
+          gameID: lobbyId,
+          gameRecord: parsed.data,
+          clientID: generateID(),
+        } as JoinLobbyEvent,
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    return "success";
   }
 
   private async pollPlayers() {
@@ -292,7 +285,6 @@ export class JoinPrivateLobbyModal extends LitElement {
       },
     )
       .then((response) => response.json())
-      .then(GameInfoSchema.parse)
       .then((data: GameInfo) => {
         this.players = data.clients?.map((p) => p.username) ?? [];
       })

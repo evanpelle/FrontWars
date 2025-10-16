@@ -1,10 +1,3 @@
-import { z } from "zod";
-
-const LockSchema = z.object({
-  owner: z.string(),
-  timestamp: z.number(),
-});
-
 export class MultiTabDetector {
   private readonly tabId = `${Date.now()}-${Math.random()}`;
   private readonly lockKey = "multi-tab-lock";
@@ -67,7 +60,7 @@ export class MultiTabDetector {
     if (e.key === this.lockKey && e.newValue) {
       let other: { owner: string; timestamp: number };
       try {
-        other = LockSchema.parse(JSON.parse(e.newValue));
+        other = JSON.parse(e.newValue);
       } catch (e) {
         console.error("Failed to parse lock", e);
         return;
@@ -106,7 +99,7 @@ export class MultiTabDetector {
     const raw = localStorage.getItem(this.lockKey);
     if (!raw) return null;
     try {
-      return LockSchema.parse(JSON.parse(raw));
+      return JSON.parse(raw);
     } catch (e) {
       console.error("Failed to parse lock", raw, e);
       return null;

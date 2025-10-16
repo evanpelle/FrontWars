@@ -1,14 +1,14 @@
-import "./components/baseComponents/Button";
-import "./components/baseComponents/Modal";
 import { LitElement, css, html } from "lit";
+import { resolveMarkdown } from "lit-markdown";
 import { customElement, property, query } from "lit/decorators.js";
 import changelog from "../../resources/changelog.md";
-import { resolveMarkdown } from "lit-markdown";
 import { translateText } from "../client/Utils";
+import "./components/baseComponents/Button";
+import "./components/baseComponents/Modal";
 
 @customElement("news-modal")
 export class NewsModal extends LitElement {
-  @query("o-modal") private readonly modalEl!: HTMLElement & {
+  @query("o-modal") private modalEl!: HTMLElement & {
     open: () => void;
     close: () => void;
   };
@@ -23,7 +23,7 @@ export class NewsModal extends LitElement {
     super.disconnectedCallback();
   }
 
-  private readonly handleKeyDown = (e: KeyboardEvent) => {
+  private handleKeyDown = (e: KeyboardEvent) => {
     if (e.code === "Escape") {
       e.preventDefault();
       this.close();
@@ -32,7 +32,7 @@ export class NewsModal extends LitElement {
 
   @property({ type: String }) markdown = "Loading...";
 
-  private initialized = false;
+  private initialized: boolean = false;
 
   static styles = css`
     :host {

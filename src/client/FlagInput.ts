@@ -1,13 +1,14 @@
 import { LitElement, css, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { FlagSchema } from "../core/Schemas";
 import { renderPlayerFlag } from "../core/CustomFlag";
+import { FlagSchema } from "../core/Schemas";
+import { translateText } from "./Utils";
 
-const flagKey = "flag";
+const flagKey: string = "flag";
 
 @customElement("flag-input")
 export class FlagInput extends LitElement {
-  @state() public flag = "";
+  @state() public flag: string = "";
 
   static styles = css`
     @media (max-width: 768px) {
@@ -43,7 +44,7 @@ export class FlagInput extends LitElement {
     );
   }
 
-  private readonly updateFlag = (ev: Event) => {
+  private updateFlag = (ev: Event) => {
     const e = ev as CustomEvent<{ flag: string }>;
     if (!FlagSchema.safeParse(e.detail.flag).success) return;
     if (this.flag !== e.detail.flag) {
@@ -72,14 +73,13 @@ export class FlagInput extends LitElement {
       <div class="flex relative">
         <button
           id="flag-input_"
-          class="border p-[4px] rounded-lg flex cursor-pointer border-black/30
-          dark:border-gray-300/60 bg-white/70 dark:bg-[rgba(55,65,81,0.7)]"
-          title="Pick a flag!"
+            class="b-button border rounded-lg flex cursor-pointer"
+          title=${translateText("flag_input.button_title")}
         >
           <span
             id="flag-preview"
-            style="display:inline-block; width:48px; height:64px;
-            vertical-align:middle; background:#333; border-radius:6px;
+            style="display:inline-block;
+            vertical-align:middle; border-radius:6px;
             overflow:hidden;"
           ></span>
         </button>
@@ -99,7 +99,7 @@ export class FlagInput extends LitElement {
       renderPlayerFlag(this.flag, preview);
     } else {
       const img = document.createElement("img");
-      img.src = this.flag ? `/flags/${this.flag}.svg` : "/flags/xx.svg";
+      img.src = this.flag ? `/flags/${this.flag}.svg` : `/flags/xx.svg`;
       img.style.width = "100%";
       img.style.height = "100%";
       img.style.objectFit = "contain";

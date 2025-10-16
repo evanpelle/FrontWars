@@ -1,6 +1,16 @@
 import IntlMessageFormat from "intl-messageformat";
-import { LangSelector } from "./LangSelector";
 import { MessageType } from "../core/game/Game";
+import { LangSelector } from "./LangSelector";
+
+export function renderDuration(totalSeconds: number): string {
+  if (totalSeconds <= 0) return "0s";
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  let time = "";
+  if (minutes > 0) time += `${minutes}min `;
+  time += `${seconds}s`;
+  return time.trim();
+}
 
 export function renderTroops(troops: number): string {
   return renderNumber(troops / 10);
@@ -83,7 +93,6 @@ export const translateText = (
   key: string,
   params: Record<string, string | number> = {},
 ): string => {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const self = translateText as any;
   self.formatterCache ??= new Map();
   self.lastLang ??= null;
@@ -109,7 +118,7 @@ export const translateText = (
   let message = langSelector.translations[key];
 
   if (!message && langSelector.defaultTranslations) {
-    const { defaultTranslations } = langSelector;
+    const defaultTranslations = langSelector.defaultTranslations;
     if (defaultTranslations && defaultTranslations[key]) {
       message = defaultTranslations[key];
     }
@@ -123,7 +132,6 @@ export const translateText = (
         ? "en"
         : langSelector.currentLang;
     const cacheKey = `${key}:${locale}:${message}`;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     let formatter = self.formatterCache.get(cacheKey);
 
     if (!formatter) {
@@ -194,7 +202,7 @@ export function getMessageTypeClasses(type: MessageType): string {
 }
 
 export function getModifierKey(): string {
-  const isMac = navigator.userAgent.includes("Mac");
+  const isMac = /Mac/.test(navigator.userAgent);
   if (isMac) {
     return "⌘"; // Command key
   } else {
@@ -203,7 +211,7 @@ export function getModifierKey(): string {
 }
 
 export function getAltKey(): string {
-  const isMac = navigator.userAgent.includes("Mac");
+  const isMac = /Mac/.test(navigator.userAgent);
   if (isMac) {
     return "⌥"; // Option key
   } else {
@@ -228,6 +236,16 @@ export function incrementGamesPlayed(): void {
   }
 }
 
+export function isInIframe(): boolean {
+  try {
+    return window.self !== window.top;
+  } catch (e) {
+    // If we can't access window.top due to cross-origin restrictions,
+    // we're definitely in an iframe
+    return true;
+  }
+}
+
 /**
  * Detects if the current device is mobile, tablet, or iPad with desktop view enabled
  * @returns true if the device should use mobile controls
@@ -238,10 +256,14 @@ export function isMobileDevice(): boolean {
 
   // Check user agent for mobile devices
   const userAgent = navigator.userAgent.toLowerCase();
-  const isMobileUA = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+  const isMobileUA =
+    /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
+      userAgent,
+    );
 
   // Check for iPad specifically (even with desktop view enabled)
-  const isIPad = /ipad/i.test(userAgent) ||
+  const isIPad =
+    /ipad/i.test(userAgent) ||
     (navigator.maxTouchPoints > 1 && /macintosh/i.test(userAgent));
 
   // Check screen size for tablets and mobile devices

@@ -1,34 +1,19 @@
-import {
-  GameConfig,
-  GameConfigSchema,
-  GameID,
-  GameRecord,
-  GameRecordSchema,
-} from "../core/Schemas";
-import { ID } from "../core/BaseSchemas";
+import { GameConfig, GameID, PartialGameRecord } from "../core/Schemas";
 import { replacer } from "../core/Util";
-import { z } from "zod";
 
-const LocalStatsDataSchema = z.record(
-  ID,
-  z.object({
-    lobby: GameConfigSchema.partial(),
+export interface LocalStatsData {
+  [key: GameID]: {
+    lobby: Partial<GameConfig>;
     // Only once the game is over
-    gameRecord: GameRecordSchema.optional(),
-  }),
-);
-type LocalStatsData = z.infer<typeof LocalStatsDataSchema>;
+    gameRecord?: PartialGameRecord;
+  };
+}
 
-let _startTime: number | undefined;
+let _startTime: number;
 
 function getStats(): LocalStatsData {
-  try {
-    return LocalStatsDataSchema.parse(
-      JSON.parse(localStorage.getItem("game-records") ?? "{}"),
-    );
-  } catch (e) {
-    return {};
-  }
+  const statsStr = localStorage.getItem("game-records");
+  return statsStr ? JSON.parse(statsStr) : {};
 }
 
 function save(stats: LocalStatsData) {
@@ -56,7 +41,7 @@ export function startTime() {
   return _startTime;
 }
 
-export function endGame(gameRecord: GameRecord) {
+export function endGame(gameRecord: PartialGameRecord) {
   if (localStorage === undefined) {
     return;
   }

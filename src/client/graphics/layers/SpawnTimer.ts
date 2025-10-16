@@ -1,15 +1,15 @@
 import { GameMode, Team } from "../../../core/game/Game";
 import { GameView } from "../../../core/game/GameView";
-import { Layer } from "./Layer";
 import { TransformHandler } from "../TransformHandler";
+import { Layer } from "./Layer";
 
 export class SpawnTimer implements Layer {
   private ratios = [0];
   private colors = ["rgba(0, 128, 255, 0.7)", "rgba(0, 0, 0, 0.5)"];
 
   constructor(
-    private readonly game: GameView,
-    private readonly transformHandler: TransformHandler,
+    private game: GameView,
+    private transformHandler: TransformHandler,
   ) {}
 
   init() {}

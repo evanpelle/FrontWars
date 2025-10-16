@@ -1,12 +1,12 @@
 import { LitElement, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { GameView } from "../../../core/game/GameView";
-import { Layer } from "./Layer";
 import { translateText } from "../../Utils";
+import { Layer } from "./Layer";
 
 @customElement("heads-up-message")
 export class HeadsUpMessage extends LitElement implements Layer {
-  public game: GameView | undefined;
+  public game: GameView;
 
   @state()
   private isVisible = false;
@@ -21,7 +21,6 @@ export class HeadsUpMessage extends LitElement implements Layer {
   }
 
   tick() {
-    if (!this.game) throw new Error("Not initialzied");
     if (!this.game.inSpawnPhase()) {
       this.isVisible = false;
       this.requestUpdate();

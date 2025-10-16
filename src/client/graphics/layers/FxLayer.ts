@@ -1,35 +1,37 @@
+import { Theme } from "../../../core/configuration/Config";
+import { UnitType } from "../../../core/game/Game";
 import {
   BonusEventUpdate,
   ConquestUpdate,
   GameUpdateType,
   RailroadUpdate,
 } from "../../../core/game/GameUpdates";
-import { Fx, FxType } from "../fx/Fx";
 import { GameView, UnitView } from "../../../core/game/GameView";
-import { ShockwaveFx, nukeFxFactory } from "../fx/NukeFx";
-import { AnimatedSpriteLoader } from "../AnimatedSpriteLoader";
-import { Layer } from "./Layer";
-import { SpriteFx } from "../fx/SpriteFx";
-import { TextFx } from "../fx/TextFx";
-import { Theme } from "../../../core/configuration/Config";
-import { UnitExplosionFx } from "../fx/UnitExplosionFx";
-import { UnitType } from "../../../core/game/Game";
-import { conquestFxFactory } from "../fx/ConquestFx";
+import SoundManager, { SoundEffect } from "../../sound/SoundManager";
 import { renderNumber } from "../../Utils";
-
+import { AnimatedSpriteLoader } from "../AnimatedSpriteLoader";
+import { conquestFxFactory } from "../fx/ConquestFx";
+import { Fx, FxType } from "../fx/Fx";
+import { nukeFxFactory, ShockwaveFx } from "../fx/NukeFx";
+import { SpriteFx } from "../fx/SpriteFx";
+import { TargetFx } from "../fx/TargetFx";
+import { TextFx } from "../fx/TextFx";
+import { UnitExplosionFx } from "../fx/UnitExplosionFx";
+import { Layer } from "./Layer";
 export class FxLayer implements Layer {
-  private canvas: HTMLCanvasElement | undefined;
-  private context: CanvasRenderingContext2D | undefined;
+  private canvas: HTMLCanvasElement;
+  private context: CanvasRenderingContext2D;
 
-  private lastRefresh = 0;
-  private readonly refreshRate = 10;
-  private readonly theme: Theme;
-  private readonly animatedSpriteLoader: AnimatedSpriteLoader =
+  private lastRefresh: number = 0;
+  private refreshRate: number = 10;
+  private theme: Theme;
+  private animatedSpriteLoader: AnimatedSpriteLoader =
     new AnimatedSpriteLoader();
 
   private allFx: Fx[] = [];
+  private boatTargetFxByUnitId: Map<number, TargetFx> = new Map();
 
-  constructor(private readonly game: GameView) {
+  constructor(private game: GameView) {
     this.theme = this.game.config().theme();
   }
 
@@ -38,6 +40,7 @@ export class FxLayer implements Layer {
   }
 
   tick() {
+    this.manageBoatTargetFx();
     this.game
       .updatesSinceLastTick()
       ?.[GameUpdateType.Unit]?.map((unit) => this.game.unit(unit.id))
@@ -66,16 +69,34 @@ export class FxLayer implements Layer {
       });
   }
 
+  private manageBoatTargetFx() {
+    // End markers for boats that arrived or retreated
+    for (const [unitId, fx] of Array.from(
+      this.boatTargetFxByUnitId.entries(),
+    )) {
+      const unit = this.game.unit(unitId);
+      if (
+        !unit ||
+        !unit.isActive() ||
+        unit.reachedTarget() ||
+        unit.retreating()
+      ) {
+        (fx as any).end?.();
+        this.boatTargetFxByUnitId.delete(unitId);
+      }
+    }
+  }
+
   onBonusEvent(bonus: BonusEventUpdate) {
     if (this.game.player(bonus.player) !== this.game.myPlayer()) {
       // Only display text fx for the current player
       return;
     }
-    const { tile } = bonus;
+    const tile = bonus.tile;
     const x = this.game.x(tile);
     let y = this.game.y(tile);
-    const { gold } = bonus;
-    const { troops } = bonus;
+    const gold = bonus.gold;
+    const troops = bonus.troops;
 
     if (gold > 0) {
       const shortened = renderNumber(gold, 0);
@@ -97,6 +118,23 @@ export class FxLayer implements Layer {
 
   onUnitEvent(unit: UnitView) {
     switch (unit.type()) {
+      case UnitType.TransportShip: {
+        const my = this.game.myPlayer();
+        if (!my) return;
+        if (unit.owner() !== my) return;
+        if (!unit.isActive() || unit.retreating()) return;
+        if (this.boatTargetFxByUnitId.has(unit.id())) return;
+        const t = unit.targetTile();
+        if (t !== undefined) {
+          const x = this.game.x(t);
+          const y = this.game.y(t);
+          // persistent until boat finishes or retreats
+          const fx = new TargetFx(x, y, 0, true);
+          this.allFx.push(fx);
+          this.boatTargetFxByUnitId.set(unit.id(), fx);
+        }
+        break;
+      }
       case UnitType.AtomBomb:
       case UnitType.MIRVWarhead:
         this.onNukeEvent(unit, 70);
@@ -149,7 +187,7 @@ export class FxLayer implements Layer {
   }
 
   onRailroadEvent(railroad: RailroadUpdate) {
-    const { railTiles } = railroad;
+    const railTiles = railroad.railTiles;
     for (const rail of railTiles) {
       // No need for pseudorandom, this is fx
       const chanceFx = Math.floor(Math.random() * 3);
@@ -173,6 +211,8 @@ export class FxLayer implements Layer {
     if (conqueror !== this.game.myPlayer()) {
       return;
     }
+
+    SoundManager.playSoundEffect(SoundEffect.KaChing);
 
     const conquestFx = conquestFxFactory(
       this.animatedSpriteLoader,
@@ -265,7 +305,6 @@ export class FxLayer implements Layer {
   }
 
   renderLayer(context: CanvasRenderingContext2D) {
-    if (this.canvas === undefined) throw new Error("Not initialized");
     const now = Date.now();
     if (this.game.config().userSettings()?.fxLayer()) {
       if (now > this.lastRefresh + this.refreshRate) {
@@ -284,8 +323,6 @@ export class FxLayer implements Layer {
   }
 
   renderAllFx(context: CanvasRenderingContext2D, delta: number) {
-    if (this.canvas === undefined) throw new Error("Not initialized");
-    if (this.context === undefined) throw new Error("Not initialized");
     if (this.allFx.length > 0) {
       this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
       this.renderContextFx(delta);
@@ -293,7 +330,6 @@ export class FxLayer implements Layer {
   }
 
   renderContextFx(duration: number) {
-    if (this.context === undefined) throw new Error("Not initialized");
     for (let i = this.allFx.length - 1; i >= 0; i--) {
       if (!this.allFx[i].renderTick(duration, this.context)) {
         this.allFx.splice(i, 1);

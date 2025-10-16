@@ -1,10 +1,11 @@
 import { LitElement, html } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import Countries from "./data/countries.json";
+import { translateText } from "./Utils";
 
 @customElement("flag-input-modal")
 export class FlagInputModal extends LitElement {
-  @query("o-modal") private readonly modalEl!: HTMLElement & {
+  @query("o-modal") private modalEl!: HTMLElement & {
     open: () => void;
     close: () => void;
   };
@@ -18,50 +19,55 @@ export class FlagInputModal extends LitElement {
 
   render() {
     return html`
-      <o-modal title="Flag Selector Modal" alwaysMaximized>
-        <input
-          class="h-[2rem] border-none border border-gray-300
+      <o-modal alwaysMaximized title=${translateText("flag_input.title")}>
+        <div class="flex justify-center w-full p-[1rem]">
+          <input
+            class="h-[2rem] border-none border border-gray-300 
           rounded-xl shadow-sm text-2xl text-center focus:outline-none
           focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black
           dark:border-gray-300/60 dark:bg-gray-700 dark:text-white"
+            type="text"
+            placeholder=${translateText("flag_input.search_flag")}
+            @change=${this.handleSearch}
+            @keyup=${this.handleSearch}
+          />
+        </div>
 
-          type="text"
-          placeholder="Search..."
-          @change=${this.handleSearch}
-          @keyup=${this.handleSearch}
-        />
         <div
           class="flex flex-wrap justify-evenly gap-[1rem] overflow-y-auto overflow-x-hidden h-[90%]"
         >
-          ${this.isModalOpen ? Countries.filter(
-            (country) => !country.restricted && this.includedInSearch(country),
-          ).map(
-            (country) => html`
-              <button
-                @click=${() => {
-                  this.setFlag(country.code);
-                  this.close();
-                }}
-                class="text-center cursor-pointer border-none bg-none opacity-70 
+          ${this.isModalOpen
+            ? Countries.filter(
+                (country) =>
+                  !country.restricted && this.includedInSearch(country),
+              ).map(
+                (country) => html`
+                  <button
+                    @click=${() => {
+                      this.setFlag(country.code);
+                      this.close();
+                    }}
+                    class="text-center cursor-pointer border-none bg-none opacity-70 
                   w-[calc(100%/2-15px)] sm:w-[calc(100%/4-15px)] 
                   md:w-[calc(100%/6-15px)] lg:w-[calc(100%/8-15px)] 
                   xl:w-[calc(100%/10-15px)] min-w-[80px]"
-              >
-                <img
-                  class="country-flag w-full h-auto"
-                  src="/flags/${country.code}.svg"
-                  @error=${(e: Event) => {
-                    const img = e.currentTarget as HTMLImageElement;
-                    const fallback = "/flags/xx.svg";
-                    if (img.src && !img.src.endsWith(fallback)) {
-                      img.src = fallback;
-                    }
-                  }}
-                />
-                <span class="country-name">${country.name}</span>
-              </button>
-            `,
-          ) : html``}
+                  >
+                    <img
+                      class="country-flag w-full h-auto"
+                      src="/flags/${country.code}.svg"
+                      @error=${(e: Event) => {
+                        const img = e.currentTarget as HTMLImageElement;
+                        const fallback = "/flags/xx.svg";
+                        if (img.src && !img.src.endsWith(fallback)) {
+                          img.src = fallback;
+                        }
+                      }}
+                    />
+                    <span class="country-name">${country.name}</span>
+                  </button>
+                `,
+              )
+            : html``}
         </div>
       </o-modal>
     `;
@@ -108,7 +114,7 @@ export class FlagInputModal extends LitElement {
     super.disconnectedCallback();
   }
 
-  private readonly handleKeyDown = (e: KeyboardEvent) => {
+  private handleKeyDown = (e: KeyboardEvent) => {
     if (e.code === "Escape") {
       e.preventDefault();
       this.close();

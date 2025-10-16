@@ -1,3 +1,31 @@
+import { translateText } from "../client/Utils";
+import { EventBus } from "../core/EventBus";
+import {
+  ClientID,
+  GameID,
+  GameRecord,
+  GameStartInfo,
+  PlayerCosmeticRefs,
+  PlayerRecord,
+  ServerMessage,
+} from "../core/Schemas";
+import { createPartialGameRecord, replacer } from "../core/Util";
+import { ServerConfig } from "../core/configuration/Config";
+import { getConfig } from "../core/configuration/ConfigLoader";
+import { PlayerActions, UnitType } from "../core/game/Game";
+import { TileRef } from "../core/game/GameMap";
+import { GameMapLoader } from "../core/game/GameMapLoader";
+import {
+  ErrorUpdate,
+  GameUpdateType,
+  GameUpdateViewData,
+  HashUpdate,
+  WinUpdate,
+} from "../core/game/GameUpdates";
+import { GameView, PlayerView } from "../core/game/GameView";
+import { loadTerrainMap, TerrainMapData } from "../core/game/TerrainMapLoader";
+import { UserSettings } from "../core/game/UserSettings";
+import { WorkerClient } from "../core/worker/WorkerClient";
 import {
   AutoUpgradeEvent,
   DoBoatAttackEvent,
@@ -6,24 +34,9 @@ import {
   MouseMoveEvent,
   MouseUpEvent,
 } from "./InputHandler";
-import {
-  ClientID,
-  GameID,
-  GameRecord,
-  GameStartInfo,
-  PlayerRecord,
-  ServerMessage,
-} from "../core/Schemas";
-import {
-  ErrorUpdate,
-  GameUpdateType,
-  GameUpdateViewData,
-  HashUpdate,
-  WinUpdate,
-} from "../core/game/GameUpdates";
-import { GameRenderer, createRenderer } from "./graphics/GameRenderer";
-import { GameView, PlayerView } from "../core/game/GameView";
-import { PlayerActions, UnitType } from "../core/game/Game";
+import { endGame, startGame, startTime } from "./LocalPersistantStats";
+import { getPersistentID } from "./Main";
+import { terrainMapFileLoader } from "./TerrainMapFileLoader";
 import {
   SendAttackIntentEvent,
   SendBoatAttackIntentEvent,
@@ -32,25 +45,13 @@ import {
   SendUpgradeStructureIntentEvent,
   Transport,
 } from "./Transport";
-import { TerrainMapData, loadTerrainMap } from "../core/game/TerrainMapLoader";
-import { endGame, startGame, startTime } from "./LocalPersistantStats";
-import { EventBus } from "../core/EventBus";
-import { GameMapLoader } from "../core/game/GameMapLoader";
-import { ServerConfig } from "../core/configuration/Config";
-import { TileRef } from "../core/game/GameMap";
-import { UserSettings } from "../core/game/UserSettings";
-import { WorkerClient } from "../core/worker/WorkerClient";
 import { createCanvas } from "./Utils";
-import { createGameRecord } from "../core/Util";
-import { getConfig } from "../core/configuration/ConfigLoader";
-import { getPersistentID } from "./Main";
-import { terrainMapFileLoader } from "./TerrainMapFileLoader";
-import { translateText } from "../client/Utils";
+import { createRenderer, GameRenderer } from "./graphics/GameRenderer";
+import SoundManager from "./sound/SoundManager";
 
-export type LobbyConfig = {
+export interface LobbyConfig {
   serverConfig: ServerConfig;
-  pattern: string | undefined;
-  flag: string;
+  cosmetics: PlayerCosmeticRefs;
   playerName: string;
   clientID: ClientID;
   gameID: GameID;
@@ -59,7 +60,7 @@ export type LobbyConfig = {
   gameStartInfo?: GameStartInfo;
   // GameRecord exists when replaying an archived game.
   gameRecord?: GameRecord;
-};
+}
 
 export function joinLobby(
   eventBus: EventBus,
@@ -84,14 +85,22 @@ export function joinLobby(
 
   const onmessage = (message: ServerMessage) => {
     if (message.type === "prestart") {
-      console.log(`lobby: game prestarting: ${JSON.stringify(message)}`);
-      terrainLoad = loadTerrainMap(message.gameMap, terrainMapFileLoader);
+      console.log(
+        `lobby: game prestarting: ${JSON.stringify(message, replacer)}`,
+      );
+      terrainLoad = loadTerrainMap(
+        message.gameMap,
+        message.gameMapSize,
+        terrainMapFileLoader,
+      );
       onPrestart();
     }
     if (message.type === "start") {
       // Trigger prestart for singleplayer games
       onPrestart();
-      console.log(`lobby: game started: ${JSON.stringify(message, null, 2)}`);
+      console.log(
+        `lobby: game started: ${JSON.stringify(message, replacer, 2)}`,
+      );
       onJoin();
       // For multiplayer games, GameStartInfo is not known until game starts.
       lobbyConfig.gameStartInfo = message.gameStartInfo;
@@ -146,6 +155,7 @@ async function createClientGame(
   } else {
     gameMap = await loadTerrainMap(
       lobbyConfig.gameStartInfo.config.gameMap,
+      lobbyConfig.gameStartInfo.config.gameMapSize,
       mapLoader,
     );
   }
@@ -163,8 +173,6 @@ async function createClientGame(
     lobbyConfig.gameStartInfo.players,
   );
 
-  console.log("going to init path finder");
-  console.log("inited path finder");
   const canvas = createCanvas();
   const gameRenderer = createRenderer(canvas, gameView, eventBus);
 
@@ -176,7 +184,7 @@ async function createClientGame(
     lobbyConfig,
     eventBus,
     gameRenderer,
-    new InputHandler(canvas, eventBus),
+    new InputHandler(gameRenderer.uiState, canvas, eventBus),
     transport,
     worker,
     gameView,
@@ -189,20 +197,19 @@ export class ClientGameRunner {
 
   private turnsSeen = 0;
   private hasJoined = false;
-
   private lastMousePosition: { x: number; y: number } | null = null;
 
-  private lastMessageTime = 0;
-  private connectionCheckInterval: ReturnType<typeof setTimeout> | null = null;
+  private lastMessageTime: number = 0;
+  private connectionCheckInterval: NodeJS.Timeout | null = null;
 
   constructor(
-    private readonly lobby: LobbyConfig,
-    private readonly eventBus: EventBus,
-    private readonly renderer: GameRenderer,
-    private readonly input: InputHandler,
-    private readonly transport: Transport,
-    private readonly worker: WorkerClient,
-    private readonly gameView: GameView,
+    private lobby: LobbyConfig,
+    private eventBus: EventBus,
+    private renderer: GameRenderer,
+    private input: InputHandler,
+    private transport: Transport,
+    private worker: WorkerClient,
+    private gameView: GameView,
   ) {
     this.lastMessageTime = Date.now();
   }
@@ -223,21 +230,21 @@ export class ClientGameRunner {
     if (this.lobby.gameStartInfo === undefined) {
       throw new Error("missing gameStartInfo");
     }
-    const record = createGameRecord(
+    const record = createPartialGameRecord(
       this.lobby.gameStartInfo.gameID,
       this.lobby.gameStartInfo.config,
       players,
       // Not saving turns locally
       [],
-      startTime() ?? 0,
+      startTime(),
       Date.now(),
       update.winner,
-      this.lobby.serverConfig,
     );
     endGame(record);
   }
 
   public start() {
+    SoundManager.playBackgroundMusic();
     console.log("starting client game");
 
     this.isActive = true;
@@ -248,6 +255,7 @@ export class ClientGameRunner {
         1000,
       );
     }, 20000);
+
     this.eventBus.on(MouseUpEvent, this.inputEvent.bind(this));
     this.eventBus.on(MouseMoveEvent, this.onMouseMove.bind(this));
     this.eventBus.on(AutoUpgradeEvent, this.autoUpgradeEvent.bind(this));
@@ -274,7 +282,7 @@ export class ClientGameRunner {
           this.lobby.clientID,
         );
         console.error(gu.stack);
-        this.stop(true);
+        this.stop();
         return;
       }
       this.transport.turnComplete();
@@ -288,7 +296,7 @@ export class ClientGameRunner {
         this.saveGame(gu.updates[GameUpdateType.Win][0]);
       }
     });
-    const { worker } = this;
+    const worker = this.worker;
     const keepWorkerAlive = () => {
       if (this.isActive) {
         worker.sendHeartbeat();
@@ -364,12 +372,13 @@ export class ClientGameRunner {
     this.transport.connect(onconnect, onmessage);
   }
 
-  public stop(saveFullGame = false) {
+  public stop() {
+    SoundManager.stopBackgroundMusic();
     if (!this.isActive) return;
 
     this.isActive = false;
     this.worker.cleanup();
-    this.transport.leaveGame(saveFullGame);
+    this.transport.leaveGame();
     if (this.connectionCheckInterval) {
       clearInterval(this.connectionCheckInterval);
       this.connectionCheckInterval = null;
@@ -377,7 +386,7 @@ export class ClientGameRunner {
   }
 
   private inputEvent(event: MouseUpEvent) {
-    if (!this.isActive) {
+    if (!this.isActive || this.renderer.uiState.ghostStructure !== null) {
       return;
     }
     const cell = this.renderer.transformHandler.screenToWorldCoordinates(
@@ -420,7 +429,7 @@ export class ClientGameRunner {
 
       const owner = this.gameView.owner(tile);
       if (owner.isPlayer()) {
-        this.gameView.setFocusedPlayer(owner);
+        this.gameView.setFocusedPlayer(owner as PlayerView);
       } else {
         this.gameView.setFocusedPlayer(null);
       }
@@ -452,7 +461,11 @@ export class ClientGameRunner {
       return;
     }
 
-    this.myPlayer.actions(tile).then((actions) => {
+    this.findAndUpgradeNearestBuilding(tile);
+  }
+
+  private findAndUpgradeNearestBuilding(clickedTile: TileRef) {
+    this.myPlayer!.actions(clickedTile).then((actions) => {
       const upgradeUnits: {
         unitId: number;
         unitType: UnitType;
@@ -466,14 +479,14 @@ export class ClientGameRunner {
             .find((unit) => unit.id() === bu.canUpgrade);
           if (existingUnit) {
             const distance = this.gameView.manhattanDist(
-              tile,
+              clickedTile,
               existingUnit.tile(),
             );
 
             upgradeUnits.push({
               unitId: bu.canUpgrade,
               unitType: bu.type,
-              distance,
+              distance: distance,
             });
           }
         }
@@ -559,7 +572,7 @@ export class ClientGameRunner {
       (bu) => bu.type === UnitType.TransportShip,
     );
     if (bu === undefined) {
-      console.warn("no transport ship buildable units");
+      console.warn(`no transport ship buildable units`);
       return false;
     }
     return (
@@ -573,7 +586,7 @@ export class ClientGameRunner {
     if (!this.myPlayer) return;
 
     this.myPlayer.bestTransportShipSpawn(tile).then((spawn: number | false) => {
-      if (this.myPlayer === null) throw new Error("Not initialized");
+      if (this.myPlayer === null) throw new Error("not initialized");
       this.eventBus.emit(
         new SendBoatAttackIntentEvent(
           this.gameView.owner(tile).id(),
@@ -619,7 +632,7 @@ export class ClientGameRunner {
     if (this.gameView.isLand(tile)) {
       const owner = this.gameView.owner(tile);
       if (owner.isPlayer()) {
-        this.gameView.setFocusedPlayer(owner);
+        this.gameView.setFocusedPlayer(owner as PlayerView);
       } else {
         this.gameView.setFocusedPlayer(null);
       }
@@ -633,7 +646,7 @@ export class ClientGameRunner {
         .sort((a, b) => a.distSquared - b.distSquared);
 
       if (units.length > 0) {
-        this.gameView.setFocusedPlayer(units[0].unit.owner());
+        this.gameView.setFocusedPlayer(units[0].unit.owner() as PlayerView);
       } else {
         this.gameView.setFocusedPlayer(null);
       }

@@ -1,12 +1,12 @@
-import { GameMode, Team, UnitType } from "../../../core/game/Game";
-import { GameView, PlayerView } from "../../../core/game/GameView";
 import { LitElement, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { renderNumber, translateText } from "../../Utils";
 import { EventBus } from "../../../core/EventBus";
+import { GameMode, Team, UnitType } from "../../../core/game/Game";
+import { GameView, PlayerView } from "../../../core/game/GameView";
+import { renderNumber, translateText } from "../../Utils";
 import { Layer } from "./Layer";
 
-type TeamEntry = {
+interface TeamEntry {
   teamName: string;
   totalScoreStr: string;
   totalGold: string;
@@ -17,12 +17,12 @@ type TeamEntry = {
   totalCities: string;
   totalScoreSort: number;
   players: PlayerView[];
-};
+}
 
 @customElement("team-stats")
 export class TeamStats extends LitElement implements Layer {
-  public game: GameView | undefined;
-  public eventBus: EventBus | undefined;
+  public game: GameView;
+  public eventBus: EventBus;
 
   @property({ type: Boolean }) visible = false;
   teams: TeamEntry[] = [];
@@ -36,7 +36,6 @@ export class TeamStats extends LitElement implements Layer {
   init() {}
 
   tick() {
-    if (this.game === undefined) throw new Error("Not initialized");
     if (this.game.config().gameConfig().gameMode !== GameMode.Team) return;
 
     if (!this._shownOnInit && !this.game.inSpawnPhase()) {
@@ -52,7 +51,6 @@ export class TeamStats extends LitElement implements Layer {
   }
 
   private updateTeamStats() {
-    if (this.game === undefined) throw new Error("Not initialized");
     const players = this.game.playerViews();
     const grouped: Record<Team, PlayerView[]> = {};
 
@@ -85,8 +83,9 @@ export class TeamStats extends LitElement implements Layer {
           }
         }
 
-        if (this.game === undefined) throw new Error("Not initialized");
-        const totalScorePercent = totalScoreSort / this.game.numLandTiles();
+        const numTilesWithoutFallout =
+          this.game.numLandTiles() - this.game.numTilesWithFallout();
+        const totalScorePercent = totalScoreSort / numTilesWithoutFallout;
 
         return {
           teamName: teamStr,
@@ -210,7 +209,9 @@ export class TeamStats extends LitElement implements Layer {
             this.requestUpdate();
           }}
         >
-          ${this.showUnits ? translateText("leaderboard.show_control") : translateText("leaderboard.show_units")}
+          ${this.showUnits
+            ? translateText("leaderboard.show_control")
+            : translateText("leaderboard.show_units")}
         </button>
       </div>
     `;

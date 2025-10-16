@@ -1,11 +1,13 @@
-import { GameView, PlayerView } from "../../../core/game/GameView";
 import { LitElement, html } from "lit";
 import { customElement, query } from "lit/decorators.js";
-import { CloseViewEvent } from "../../InputHandler";
-import { EventBus } from "../../../core/EventBus";
+
 import { PlayerType } from "../../../core/game/Game";
-import { SendQuickChatEvent } from "../../Transport";
+import { GameView, PlayerView } from "../../../core/game/GameView";
+
 import quickChatData from "../../../../resources/QuickChat.json";
+import { EventBus } from "../../../core/EventBus";
+import { CloseViewEvent } from "../../InputHandler";
+import { SendQuickChatEvent } from "../../Transport";
 import { translateText } from "../../Utils";
 
 export type QuickChatPhrase = {
@@ -19,7 +21,7 @@ export const quickChatPhrases: QuickChatPhrases = quickChatData;
 
 @customElement("chat-modal")
 export class ChatModal extends LitElement {
-  @query("o-modal") private readonly modalEl!: HTMLElement & {
+  @query("o-modal") private modalEl!: HTMLElement & {
     open: () => void;
     close: () => void;
   };
@@ -30,20 +32,20 @@ export class ChatModal extends LitElement {
 
   private players: PlayerView[] = [];
 
-  private playerSearchQuery = "";
+  private playerSearchQuery: string = "";
   private previewText: string | null = null;
-  private requiresPlayerSelection = false;
+  private requiresPlayerSelection: boolean = false;
   private selectedCategory: string | null = null;
   private selectedPhraseText: string | null = null;
   private selectedPhraseTemplate: string | null = null;
   private selectedQuickChatKey: string | null = null;
   private selectedPlayer: PlayerView | null = null;
 
-  private recipient: PlayerView | undefined;
-  private sender: PlayerView | undefined;
-  public eventBus: EventBus | undefined;
+  private recipient: PlayerView;
+  private sender: PlayerView;
+  public eventBus: EventBus;
 
-  public g: GameView | undefined;
+  public g: GameView;
 
   quickChatPhrases: Record<
     string,
@@ -189,9 +191,8 @@ export class ChatModal extends LitElement {
   }
 
   private selectPhrase(phrase: QuickChatPhrase) {
-    if (this.selectedCategory === null) return;
     this.selectedQuickChatKey = this.getFullQuickChatKey(
-      this.selectedCategory,
+      this.selectedCategory!,
       phrase.key,
     );
     this.selectedPhraseTemplate = translateText(
@@ -220,7 +221,6 @@ export class ChatModal extends LitElement {
   }
 
   private sendChatMessage() {
-    if (!this.eventBus) return;
     console.log("Sent message:", this.previewText);
     console.log("Sender:", this.sender);
     console.log("Recipient:", this.recipient);
@@ -271,7 +271,6 @@ export class ChatModal extends LitElement {
     if (sender && recipient) {
       console.log("Sent message:", recipient);
       console.log("Sent message:", sender);
-      if (!this.g) throw new Error("Not initialized");
       this.players = this.g
         .players()
         .filter((p) => p.isAlive() && p.data.playerType !== PlayerType.Bot);
@@ -306,7 +305,6 @@ export class ChatModal extends LitElement {
     recipient?: PlayerView,
   ) {
     if (sender && recipient) {
-      if (!this.g) throw new Error("Not initialized");
       this.players = this.g
         .players()
         .filter((p) => p.isAlive() && p.data.playerType !== PlayerType.Bot);

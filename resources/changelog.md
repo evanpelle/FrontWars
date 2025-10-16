@@ -1,3 +1,40 @@
+📦 **FrontWars v25 Changelog**
+
+🎃 **Halloween Update**
+
+- Spooky Halloween theme with dark pumpkins and seasonal styling (PhoenixIO)
+- New dark color scheme and Halloween-themed UI elements
+- Enhanced visual atmosphere for the Halloween season
+
+🎨 **Cosmetics & Customization**
+
+- All colors now available for everyone - pick any color you want for your territories!
+- All territory patterns unlocked - choose from tons of cool patterns like Sword, Shells, White Rabbit, Goat, Cats, Hand, Radiation, Cursor, QR and many more
+- New custom pattern system for unique territory designs
+- Special radiation effects for territories
+- Your color and pattern choices are now remembered - no need to set them every time you play!
+- Many new cosmetic options added for more personalization
+
+🔧 **UI & Quality of Life**
+
+- Comprehensive mobile instructions added for better mobile gameplay experience
+- Fixed page scroll issues for smoother navigation
+- Improved responsive design across all devices
+- Enhanced visual clarity and user interface improvements
+
+🚀 **Major Features**
+
+- Game history and archives now available - view past matches and statistics
+- Improved server systems for better connection reliability
+- Enhanced game session handling for smoother multiplayer experience
+
+🛠️ **Technical Improvements**
+
+- Better server performance and reliability
+- Faster loading times for game resources
+- Improved game stability and bug fixes
+- Enhanced backend systems for smoother gameplay
+
 📦 **FrontWars v24 Changelog**
 
 ⚖️ **Balance Changes**

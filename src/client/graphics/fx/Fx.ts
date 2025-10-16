@@ -1,6 +1,6 @@
-export type Fx = {
+export interface Fx {
   renderTick(duration: number, ctx: CanvasRenderingContext2D): boolean;
-};
+}
 
 export enum FxType {
   MiniFire = "MiniFire",

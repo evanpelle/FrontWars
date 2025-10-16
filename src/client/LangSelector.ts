@@ -1,9 +1,6 @@
-
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import "./LanguageModal";
-import { LanguageModal } from "./LanguageModal";
 import { LitElement, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
+import "./LanguageModal";
 
 import ar from "../../resources/lang/ar.json";
 import bg from "../../resources/lang/bg.json";
@@ -19,12 +16,15 @@ import fr from "../../resources/lang/fr.json";
 import gl from "../../resources/lang/gl.json";
 import he from "../../resources/lang/he.json";
 import hi from "../../resources/lang/hi.json";
+import hu from "../../resources/lang/hu.json";
 import it from "../../resources/lang/it.json";
 import ja from "../../resources/lang/ja.json";
 import ko from "../../resources/lang/ko.json";
+import mk from "../../resources/lang/mk.json";
 import nl from "../../resources/lang/nl.json";
 import pl from "../../resources/lang/pl.json";
 import pt_BR from "../../resources/lang/pt-BR.json";
+import pt_PT from "../../resources/lang/pt-PT.json";
 import ru from "../../resources/lang/ru.json";
 import sh from "../../resources/lang/sh.json";
 import sk from "../../resources/lang/sk.json";
@@ -39,15 +39,14 @@ import zh_CN from "../../resources/lang/zh-CN.json";
 export class LangSelector extends LitElement {
   @state() public translations: Record<string, string> | undefined;
   @state() public defaultTranslations: Record<string, string> | undefined;
-  @state() public currentLang = "en";
-
+  @state() public currentLang: string = "en";
   @state() private languageList: any[] = [];
-  @state() private showModal = false;
-  @state() private debugMode = false;
+  @state() private showModal: boolean = false;
+  @state() private debugMode: boolean = false;
 
-  private debugKeyPressed = false;
+  private debugKeyPressed: boolean = false;
 
-  private readonly languageMap: Record<string, any> = {
+  private languageMap: Record<string, any> = {
     ar,
     bg,
     bn,
@@ -58,9 +57,11 @@ export class LangSelector extends LitElement {
     fr,
     it,
     hi,
+    hu,
     ja,
     nl,
     pl,
+    "pt-PT": pt_PT,
     "pt-BR": pt_BR,
     ru,
     sh,
@@ -74,54 +75,29 @@ export class LangSelector extends LitElement {
     "sv-SE": sv_SE,
     "zh-CN": zh_CN,
     ko,
+    mk,
     gl,
     sl,
     sk,
   };
 
   createRenderRoot() {
-    return this; // Use Light DOM if you prefer this
+    return this;
   }
 
   connectedCallback() {
     super.connectedCallback();
     this.setupDebugKey();
     this.initializeLanguage();
-    this.setupModalEventListeners();
   }
 
   private setupDebugKey() {
     window.addEventListener("keydown", (e) => {
-      if (e.key.toLowerCase() === "t") this.debugKeyPressed = true;
+      if (e.key?.toLowerCase() === "t") this.debugKeyPressed = true;
     });
     window.addEventListener("keyup", (e) => {
-      if (e.key.toLowerCase() === "t") this.debugKeyPressed = false;
+      if (e.key?.toLowerCase() === "t") this.debugKeyPressed = false;
     });
-  }
-
-  private readonly languageSelectedHandler = (e: Event) => {
-    const customEvent = e as CustomEvent;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    this.changeLanguage(customEvent.detail.lang);
-  };
-
-  private readonly closeModalHandler = () => {
-    this.showModal = false;
-  };
-
-  private setupModalEventListeners() {
-    // Listen for language selection from the external modal
-    document.addEventListener("language-selected", this.languageSelectedHandler);
-
-    // Listen for modal close from the external modal
-    document.addEventListener("close-modal", this.closeModalHandler);
-  }
-
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    // Clean up event listeners
-    document.removeEventListener("language-selected", this.languageSelectedHandler);
-    document.removeEventListener("close-modal", this.closeModalHandler);
   }
 
   private getClosestSupportedLang(lang: string): string {
@@ -155,7 +131,6 @@ export class LangSelector extends LitElement {
 
   private loadLanguage(lang: string): Record<string, string> {
     const language = this.languageMap[lang] ?? {};
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     const flat = flattenTranslations(language);
     return flat;
   }
@@ -163,7 +138,6 @@ export class LangSelector extends LitElement {
   private async loadLanguageList() {
     try {
       const data = this.languageMap;
-
       let list: any[] = [];
 
       const browserLang = new Intl.Locale(navigator.language).language;
@@ -215,7 +189,6 @@ export class LangSelector extends LitElement {
       if (currentLangEntry) finalList.push(currentLangEntry);
       if (englishEntry) finalList.push(englishEntry);
       if (browserLangEntry) finalList.push(browserLangEntry);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       finalList.push(...list);
       if (debugLang) finalList.push(debugLang);
 
@@ -231,12 +204,6 @@ export class LangSelector extends LitElement {
     this.currentLang = lang;
     this.applyTranslation();
     this.showModal = false;
-
-    // Close the external language modal
-    const languageModal = document.querySelector("language-modal") as LanguageModal;
-    if (languageModal) {
-      languageModal.close();
-    }
   }
 
   private applyTranslation() {
@@ -277,9 +244,7 @@ export class LangSelector extends LitElement {
 
     components.forEach((tag) => {
       document.querySelectorAll(tag).forEach((el) => {
-
         if (typeof (el as any).requestUpdate === "function") {
-
           (el as any).requestUpdate();
         }
       });
@@ -312,14 +277,6 @@ export class LangSelector extends LitElement {
     this.debugMode = this.debugKeyPressed;
     this.showModal = true;
     this.loadLanguageList();
-
-    // Show the external language modal
-    const languageModal = document.querySelector("language-modal") as LanguageModal;
-    if (languageModal) {
-      languageModal.languageList = this.languageList;
-      languageModal.currentLang = this.currentLang;
-      languageModal.open();
-    }
   }
 
   render() {
@@ -327,25 +284,23 @@ export class LangSelector extends LitElement {
       this.languageList.find((l) => l.code === this.currentLang) ??
       (this.currentLang === "debug"
         ? {
-          code: "debug",
-          native: "Debug",
-          en: "Debug",
-          svg: "xx",
-        }
+            code: "debug",
+            native: "Debug",
+            en: "Debug",
+            svg: "xx",
+          }
         : {
-          native: "English",
-          en: "English",
-          svg: "uk_us_flag",
-        });
+            native: "English",
+            en: "English",
+            svg: "uk_us_flag",
+          });
 
     return html`
       <div class="container__row">
         <button
           id="lang-selector"
           @click=${this.openModal}
-          class="text-center appearance-none w-full bg-blue-100
-          dark:bg-gray-700 hover:bg-blue-200 dark:hover:bg-gray-600
-          text-blue-900 dark:text-gray-100 p-3 font-medium
+          class="c-button c-button--secondary text-center appearance-none w-full p-3 font-medium
           text-sm sm:text-base lg:text-lg rounded-md border-none cursor-pointer
           transition-colors duration-300 flex items-center gap-2
           justify-center"
@@ -359,12 +314,20 @@ export class LangSelector extends LitElement {
           <span id="lang-name">${currentLang.native} (${currentLang.en})</span>
         </button>
       </div>
+
+      <language-modal
+        .visible=${this.showModal}
+        .languageList=${this.languageList}
+        .currentLang=${this.currentLang}
+        @language-selected=${(e: CustomEvent) =>
+          this.changeLanguage(e.detail.lang)}
+        @close-modal=${() => (this.showModal = false)}
+      ></language-modal>
     `;
   }
 }
 
 function flattenTranslations(
-
   obj: Record<string, any>,
   parentKey = "",
   result: Record<string, string> = {},
@@ -376,7 +339,6 @@ function flattenTranslations(
     if (typeof value === "string") {
       result[fullKey] = value;
     } else if (value && typeof value === "object" && !Array.isArray(value)) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       flattenTranslations(value, fullKey, result);
     } else {
       console.warn("Unknown type", typeof value, value);

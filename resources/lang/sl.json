@@ -9,7 +9,7 @@
     "close": "Zapri"
   },
   "main": {
-    "title": "FrontWars (Alfa)",
+    "title": "FrontWars",
     "join_discord": "Pridruži se našemu Discord serverju!",
     "login_discord": "Prijava z Discord računom",
     "checking_login": "Preverjanje prijave...",
@@ -26,7 +26,7 @@
     "terms_of_service": "Pogoji storitve"
   },
   "news": {
-    "full_changelog": "Poglej celotni seznam sprememb",
+    "see_all_releases": "Poglej vse posodobitve",
     "github_link": "na GitHub",
     "title": "Zadnje posodobitve"
   },
@@ -43,6 +43,7 @@
     "action_move_camera": "Premakni kamero",
     "action_ratio_change": "Pomanjšaj/Povečaj napadalno razmerje",
     "action_reset_gfx": "Ponastavi grafične nastavitve",
+    "action_auto_upgrade": "Samodejno nadgradi najbližjo zgradbo",
     "ui_section": "Igralni uporabniški vmesnik",
     "ui_leaderboard": "Lestvica",
     "ui_your_team": "Tvoja ekipa:",
@@ -51,7 +52,6 @@
     "ui_control_desc": "Nadzorna plošča vsebuje naslednje elemente:",
     "ui_pop": "Pop - Število enot, ki jih imate, vaša največja populacija in hitrost, s katero jih pridobivate.",
     "ui_gold": "Zlato - Količina zlata, ki ga imate, in hitrost, s katero ga pridobivate.",
-    "ui_troops_workers": "Čete in delavci - Količina dodeljenih čet in delavcev. Čete se uporabljajo za napad ali obrambo pred napadi. Delavci se uporabljajo za ustvarjanje zlata. Število čet in delavcev lahko prilagodite z drsnikom.",
     "ui_attack_ratio": "Razmerje napadov - Količina enot, ki bodo uporabljene pri napadu. Razmerje napadov lahko prilagodite z drsnikom. Če imate več napadalnih enot kot obrambnih enot, boste v napadu izgubili manj enot, če pa jih imate manj, boste povečali škodo, ki jo bodo napadalne enote utrpele. Učinek ne presega razmerja 2:1.",
     "ui_events": "Panel dogodkov",
     "ui_events_desc": "V zavihku Dogodki so prikazani najnovejši dogodki, zahteve in sporočila hitrega klepeta. Nekaj primerov:",
@@ -70,6 +70,7 @@
     "radial_title": "Radialni meni",
     "radial_desc": "Z desnim klikom (ali dotikom na mobilni napravi) odprete radialni meni. Z desnim klikom zunaj njega ga zaprete. V meniju lahko:",
     "radial_build": "Odprite meni Zgradb.",
+    "radial_attack": "Odpri meni napada.",
     "radial_info": "Odpri meni Informacije.",
     "radial_boat": "Pošljite čoln (transportno ladjo) v napad na izbrano lokacijo. Na voljo le, če imate dostop do vode.",
     "radial_close": "Zapri meni.",
@@ -93,11 +94,11 @@
     "build_city": "Mesto",
     "build_city_desc": "Poveča vašo največjo populacijo. Uporabno, ko ne morete razširiti svojega ozemlja ali ko ste tik pred dosego omejitve populacije.",
     "build_factory": "Tovarna",
-    "build_factory_desc": "Samodejno ustvarja železnice z bližnjimi strukturami in občasno ustvarja vlake.",
+    "build_factory_desc": "Samodejno gradi železnice do bližnjih mest, pristanišč in drugih tovarn ter se lahko poveže tudi s prijaznimi sosedi. Vlaki se redno pojavljajo in vam dajo fiksno količino zlata za vsako stavbo, ki jo obiščejo na poti, z dodatnim zlatom za obisk stavb vaših sosedov.",
     "build_defense": "Trdnjava",
     "build_defense_desc": "Poveča obrambo okoli bližnjih meja, ki kažejo karirast vzorec. Napadi sovražnikov so počasnejši in imajo več žrtev.",
     "build_port": "Luka",
-    "build_port_desc": "Gradnja je mogoča le v bližini vode. Omogoča gradnjo vojnih ladij. Samodejno pošilja trgovske ladje med pristanišči vaše države in drugimi državami (razen ko je trgovina ustavljena), kar daje zlato obema stranema. Trgovina se samodejno ustavi, ko napadete vi ali vas napade igralec. Nadaljuje se po 5 minutah ali če postanete zavezniki. Trgovanje lahko ročno preklapljate z »Ustavi trgovanje« ali »Začni trgovati«.",
+    "build_port_desc": "Gradnja je mogoča le v bližini vode. Omogoča gradnjo bojnih ladij. Samodejno pošilja trgovske ladje med pristanišči vaše države in drugimi državami (razen ko je trgovina ustavljena), kar daje zlato obema stranema. Trgovina z igralcem se samodejno ustavi, ko napadete vi ali vas napade igralec. Nadaljuje se po 5 minutah ali če postanete zavezniki. Trgovanje lahko ročno preklapljate z »Ustavi trgovanje« ali »Začni trgovati«.",
     "build_warship": "Bojna ladja",
     "build_warship_desc": "Patruljira na območju, zajame sovražne trgovske ladje in uničuje njihove čolne (transportne ladje) in vojne ladje. Zgradi se v najbližjem pristanišču in patruljira na območju, na katerega ste najprej kliknili, da ste jo zgradili. Vojne ladje lahko nadzorujete tako, da nanje kliknete z napadom (glejte akcijo Napad pod Bližnjice) in nato s klikom na napad na novo območje, kamor jih želite premakniti.",
     "build_silo": "Raketni silos",
@@ -129,10 +130,23 @@
     "disable_nations": "Deaktiviraj nacije",
     "instant_build": "Instantna gradnja",
     "infinite_gold": "Neomejeno zlata",
+    "donate_gold": "Doniraj zlato",
     "infinite_troops": "Neomejene enote",
+    "donate_troops": "Doniraj enote",
     "disable_nukes": "Deaktiviraj bombe",
     "enables_title": "Aktiviraj nastavitve",
     "start": "Začni igro"
+  },
+  "token_login_modal": {
+    "title": "Prijava...",
+    "logging_in": "Prijava...",
+    "success": "Uspešno prijavljen kot {email}!"
+  },
+  "account_modal": {
+    "title": "Račun",
+    "logged_in_as": "Prijavljen kot {email}",
+    "logged_in_with_discord": "Prijavljen z Discordom",
+    "recovery_email_sent": "Obnovitveni email je bil poslan na {email}"
   },
   "map": {
     "map": "Zemljevid",
@@ -162,7 +176,9 @@
     "baikal": "Baikal",
     "halkidiki": "Halkidiki",
     "straitofgibraltar": "Gibraltarska ožina",
-    "italia": "Italija"
+    "italia": "Italija",
+    "yenisei": "Jenisej",
+    "pluto": "Pluto"
   },
   "map_categories": {
     "continental": "Celinska",
@@ -208,12 +224,15 @@
     "disable_nations": "Deaktiviraj nacije",
     "instant_build": "Instantna gradnja",
     "infinite_gold": "Neomejeno zlata",
+    "donate_gold": "Doniraj zlato",
     "infinite_troops": "Neomejene enote",
+    "donate_troops": "Doniraj enote",
     "enables_title": "Aktiviraj nastavitve",
     "player": "Igralec",
     "players": "Igralci",
     "waiting": "Čakanje na igralce...",
-    "start": "Začni igro"
+    "start": "Začni igro",
+    "host_badge": "Gostitelj"
   },
   "team_colors": {
     "red": "Rdeča",
@@ -231,9 +250,9 @@
   },
   "difficulty": {
     "difficulty": "Težavnost",
-    "Relaxed": "Sproščeno",
-    "Balanced": "Uravnoteženo",
-    "Intense": "Intenzivno",
+    "Easy": "Sproščeno",
+    "Medium": "Balansirano",
+    "Hard": "Težko",
     "Impossible": "Nemogoče"
   },
   "game_mode": {
@@ -273,9 +292,15 @@
     "special_effects_desc": "Preklopi specialne efekte. Onemogoči da izboljšaš zmogljivost",
     "special_effects_enabled": "Specialni efekti aktivirani",
     "special_effects_disabled": "Specialni efekti onemogočeni",
+    "structure_sprites_label": "Zgradbe",
+    "structure_sprites_desc": "Preklopi način zgradb",
+    "structure_sprites_enabled": "Zgradbe prižgane",
+    "structure_sprites_disabled": "Zgradbe ugasnjene",
     "anonymous_names_label": "Skrita imena",
     "anonymous_names_desc": "Skrij prava imena igralcev z naključnimi na zaslonu.",
     "anonymous_names_enabled": "Omogočena anonimna imena",
+    "lobby_id_visibility_label": "Skrite ID sobe",
+    "lobby_id_visibility_desc": "Skrij ID sobe ko ustvarjate privatno sobo",
     "real_names_shown": "Omogočena prava imena",
     "left_click_label": "Levi klik za odprtje menija",
     "left_click_desc": "Ko je VKLOPLJEN, levi klik odpre meni, gumb za napad. Ko je IZKLOPLJEN, levi klik napada neposredno.",
@@ -284,10 +309,11 @@
     "right_click_opens_menu": "Desni klik odpre meni",
     "attack_ratio_label": "⚔️ Napadalno razmerje",
     "attack_ratio_desc": "Kolikšen odstotek vaših vojakov poslati v napad (1–100 %)",
-    "troop_ratio_label": "🪖🛠️ Razmerje med vojaki in delavci",
     "troop_ratio_desc": "Prilagodite ravnovesje med četami (za boj) in delavci (za proizvodnjo zlata) (1–100 %)",
     "territory_patterns_label": "🏳️ Teritorialni vzorci",
     "territory_patterns_desc": "Izberite, ali želite v igri prikazati vzorce ozemlja",
+    "performance_overlay_label": "Prekrivni sloj zmogljivosti",
+    "performance_overlay_desc": "Preklopi prekrivni sloj zmogljivosti. Ko je omogočen, bo prikazan prekrivni sloj zmogljivosti. Med igro pritisnite shift-D za preklop.",
     "easter_writing_speed_label": "Množitelj hitrosti pisanja",
     "easter_writing_speed_desc": "Prilagodite hitrost pretvarjanja, da programirate (x1–x100)",
     "easter_bug_count_label": "Število hroščev",
@@ -351,26 +377,31 @@
     },
     "help": {
       "troops": "Prosim pošlji mi enote!",
+      "troops_frontlines": "Pošlji enote na bojišče!",
       "gold": "Prosim pošlji mi zlato!",
       "no_attack": "Prosim ne napadi mi!",
       "sorry_attack": "Oprosti, nisem mislil napasti.",
       "alliance": "Zavezništvo?",
       "help_defend": "Pomagaj mi obraniti napad [P1]!",
-      "team_up": "Združiva se proti [P1]!"
+      "trade_partners": "Bodiva trgovska partnerja!"
     },
     "attack": {
       "attack": "Napadi [P1]!",
       "mirv": "Pošlji MIRV na [P1]!",
       "focus": "Fokusiraj napad na [P1]!",
-      "finish": "Končajva [P1]!"
+      "finish": "Končajva [P1]!",
+      "build_warships": "Zgradi bojne ladje!"
     },
     "defend": {
       "defend": "Obrani [P1]!",
+      "defend_from": "Obvaruj pred [P1]!",
       "dont_attack": "Ne napadaj [P1]!",
-      "ally": "[P1] je moj zaveznik!"
+      "ally": "[P1] je moj zaveznik!",
+      "build_posts": "Zgradi bunkerje!"
     },
     "greet": {
       "hello": "Zdravo!",
+      "good_job": "Dobro delo!",
       "good_luck": "Srečno!",
       "have_fun": "Veliko zabave!",
       "gg": "Dobra igra!",
@@ -381,13 +412,19 @@
       "thanks": "Hvala!",
       "oops": "Oops, napačna tipka!",
       "trust_me": "Lahko mi zaupaš. Obljubim!",
-      "trust_broken": "Zaupal sem ti..."
+      "trust_broken": "Zaupal sem ti...",
+      "ruining_games": "Zgubil nama boš igro.",
+      "dont_do_that": "Ne naredi tega!",
+      "same_team": "Sem na tvoji strani!"
     },
     "misc": {
       "go": "Gremo!",
       "strategy": "Dobra strategija!",
       "fun": "Ta igra je zabavna!",
-      "pr": "Kdaj se bo moj PR končno združil...?"
+      "team_up": "Združimo se skupaj proti [P1]!",
+      "pr": "Kdaj se bo moj PR končno združil...?",
+      "build_closer": "Gradi bližje da dobiš vlake!",
+      "coastline": "Prosim pusti mi dostop do obale."
     },
     "warnings": {
       "strong": "[P1] je močan.",
@@ -398,10 +435,14 @@
       "has_allies": "[P1] ima veliko zaveznikov.",
       "no_allies": "[P1] nima zaveznikov.",
       "betrayed": "[P1] je izdali svojega zaveznika!",
+      "betrayed_me": "[P1] me je izdal!",
       "getting_big": "[P1] raste prehitro!",
       "danger_base": "[P1] ni zaščiten!",
       "saving_for_mirv": "[P1] varčuje za izstrelitev MIRV-a.",
-      "mirv_ready": "[P1] ima dovolj zlata za izstrelitev MIRV-a!"
+      "mirv_ready": "[P1] ima dovolj zlata za izstrelitev MIRV-a!",
+      "snowballing": "[P1] napreduje prehitro!",
+      "cheating": "[P1] goljufa!",
+      "stop_trading": "Prenehaj trgovati z [P1]!"
     }
   },
   "build_menu": {
@@ -420,6 +461,8 @@
     "not_enough_money": "Ni dovolj denarja"
   },
   "win_modal": {
+    "support_openfront": "Podprite FrontWars!",
+    "territory_pattern": "Kupite vzorec teritorija, da podprete FrontWars!",
     "died": "Umrl si",
     "your_team": "Vaša ekipa je zmagala!",
     "other_team": "Ekipa {team} je zmagala!",
@@ -437,7 +480,13 @@
     "team": "Ekipa",
     "owned": "V lasti",
     "gold": "Zlato",
-    "troops": "Enote"
+    "troops": "Enote",
+    "launchers": "Silosi",
+    "sams": "SAM-s",
+    "warships": "Bojne ladje",
+    "cities": "Mesta",
+    "show_control": "Pokaži kontrole",
+    "show_units": "Pokaži enote"
   },
   "player_info_overlay": {
     "type": "Tip",
@@ -478,7 +527,8 @@
     "accept_alliance": "Sprejmi",
     "reject_alliance": "Zavrni",
     "alliance_renewed": "Vaše zavezništvo z {name} je bilo obnovljeno",
-    "ignore": "Prezri"
+    "ignore": "Prezri",
+    "unit_voluntarily_deleted": "Enota je bila prostovoljno odstranjena"
   },
   "unit_info_modal": {
     "structure_info": "Informacije o strukturi",
@@ -497,10 +547,8 @@
     "default": "Privzeto"
   },
   "control_panel": {
-    "pop": "Pop",
     "gold": "Zlato",
     "troops": "Enote",
-    "workers": "Delavci",
     "attack_ratio": "Napadalno razmerje"
   },
   "player_panel": {
@@ -516,7 +564,8 @@
     "yes": "Da",
     "no": "Ne",
     "none": "Noben",
-    "alliances": "Zavezništva"
+    "alliances": "Zavezništva",
+    "flag": "Zastava"
   },
   "replay_panel": {
     "replay_speed": "Hitrost ponovnega predvajanja",
@@ -573,9 +622,15 @@
       "openfront": "FrontWars",
       "t_rex": "T-Rex",
       "embelem": "Grb",
+      "contributor": "Podpornik",
       "grogu_head": "Groguva glava",
       "grogu": "Grogu"
     }
+  },
+  "flag_input": {
+    "title": "Izberi zastavo",
+    "button_title": "Izberi zastavo!",
+    "search_flag": "Iskanje..."
   },
   "spawn_ad": {
     "loading": "Nalaganje oglasa..."
@@ -585,5 +640,9 @@
     "redirecting": "Preusmerjeni ste...",
     "not_authorized": "Nimate dovoljenja za dostop do tega spletnega mesta.",
     "contact_admin": "Če menite, da se vam je to sporočilo prikazalo pomotoma, se obrnite na skrbnika spletnega mesta."
+  },
+  "radial_menu": {
+    "delete_unit_title": "Pobriši enoto",
+    "delete_unit_description": "Pritisni za odstranitev najbližjih enot"
   }
 }

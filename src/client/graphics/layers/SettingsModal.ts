@@ -1,11 +1,6 @@
-import { AlternateViewEvent, RedrawGraphicsEvent } from "../../InputHandler";
-import { LitElement, html } from "lit";
+import { html, LitElement } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
-import { EventBus } from "../../../core/EventBus";
-import { Layer } from "./Layer";
-import { PauseGameEvent } from "../../Transport";
-import { UserSettings } from "../../../core/game/UserSettings";
-import { CrazySDK } from "../../CrazyGamesSDK";
+import structureIcon from "../../../../resources/images/CityIconWhite.svg";
 import darkModeIcon from "../../../../resources/images/DarkModeIconWhite.svg";
 import emojiIcon from "../../../../resources/images/EmojiIconWhite.svg";
 import exitIcon from "../../../../resources/images/ExitIconWhite.svg";
@@ -13,31 +8,38 @@ import explosionIcon from "../../../../resources/images/ExplosionIconWhite.svg";
 import mouseIcon from "../../../../resources/images/MouseIconWhite.svg";
 import ninjaIcon from "../../../../resources/images/NinjaIconWhite.svg";
 import settingsIcon from "../../../../resources/images/SettingIconWhite.svg";
-import structureIcon from "../../../../resources/images/CityIconWhite.svg";
-import { translateText } from "../../Utils";
 import treeIcon from "../../../../resources/images/TreeIconWhite.svg";
+import musicIcon from "../../../../resources/images/music.svg";
+import { EventBus } from "../../../core/EventBus";
+import { UserSettings } from "../../../core/game/UserSettings";
+import { CrazySDK } from "../../CrazyGamesSDK";
+import { AlternateViewEvent, RefreshGraphicsEvent } from "../../InputHandler";
+import { PauseGameEvent } from "../../Transport";
+import { translateText } from "../../Utils";
+import SoundManager from "../../sound/SoundManager";
+import { Layer } from "./Layer";
 
 export class ShowSettingsModalEvent {
   constructor(
-    public readonly isVisible = true,
-    public readonly shouldPause = false,
-    public readonly isPaused = false,
+    public readonly isVisible: boolean = true,
+    public readonly shouldPause: boolean = false,
+    public readonly isPaused: boolean = false,
   ) {}
 }
 
 @customElement("settings-modal")
 export class SettingsModal extends LitElement implements Layer {
-  public eventBus: EventBus | undefined;
-  public userSettings: UserSettings | undefined;
+  public eventBus: EventBus;
+  public userSettings: UserSettings;
 
   @state()
-  private isVisible = false;
+  private isVisible: boolean = false;
 
   @state()
-  private alternateView = false;
+  private alternateView: boolean = false;
 
   @query(".modal-overlay")
-  private readonly modalOverlay!: HTMLElement;
+  private modalOverlay!: HTMLElement;
 
   @property({ type: Boolean })
   shouldPause = false;
@@ -46,14 +48,16 @@ export class SettingsModal extends LitElement implements Layer {
   wasPausedWhenOpened = false;
 
   init() {
-    if (this.eventBus === undefined) throw new Error("Not initialized");
+    SoundManager.setBackgroundMusicVolume(
+      this.userSettings.backgroundMusicVolume(),
+    );
+    SoundManager.setSoundEffectsVolume(this.userSettings.soundEffectsVolume());
     this.eventBus.on(ShowSettingsModalEvent, (event) => {
       this.isVisible = event.isVisible;
       this.shouldPause = event.shouldPause;
       this.wasPausedWhenOpened = event.isPaused;
       this.pauseGame(true);
       // Call gameplayStop when settings modal opens
-      console.log("[SettingsModal.init]:  gameplayStop");
       CrazySDK.gameplayStop();
     });
   }
@@ -74,7 +78,7 @@ export class SettingsModal extends LitElement implements Layer {
     super.disconnectedCallback();
   }
 
-  private readonly handleOutsideClick = (event: MouseEvent) => {
+  private handleOutsideClick = (event: MouseEvent) => {
     if (
       this.isVisible &&
       this.modalOverlay &&
@@ -84,7 +88,7 @@ export class SettingsModal extends LitElement implements Layer {
     }
   };
 
-  private readonly handleKeyDown = (event: KeyboardEvent) => {
+  private handleKeyDown = (event: KeyboardEvent) => {
     if (this.isVisible && event.key === "Escape") {
       this.closeModal();
     }
@@ -93,7 +97,6 @@ export class SettingsModal extends LitElement implements Layer {
   public openModal() {
     this.isVisible = true;
     this.requestUpdate();
-    console.log("[SettingsModal.openModal]: gameplayStop");
     CrazySDK.gameplayStop();
   }
 
@@ -102,60 +105,73 @@ export class SettingsModal extends LitElement implements Layer {
     this.requestUpdate();
     this.pauseGame(false);
     // Call gameplayStart when settings modal closes and game resumes
-    console.log("[SettingsModal.closeModal]: gameplayStart");
     CrazySDK.gameplayStart();
   }
 
   private pauseGame(pause: boolean) {
     if (this.shouldPause && !this.wasPausedWhenOpened)
-      this.eventBus?.emit(new PauseGameEvent(pause));
+      this.eventBus.emit(new PauseGameEvent(pause));
   }
 
   private onTerrainButtonClick() {
     this.alternateView = !this.alternateView;
-    this.eventBus?.emit(new AlternateViewEvent(this.alternateView));
+    this.eventBus.emit(new AlternateViewEvent(this.alternateView));
     this.requestUpdate();
   }
 
   private onToggleEmojisButtonClick() {
-    this.userSettings?.toggleEmojis();
+    this.userSettings.toggleEmojis();
     this.requestUpdate();
   }
 
   private onToggleStructureSpritesButtonClick() {
-    this.userSettings?.toggleStructureSprites();
+    this.userSettings.toggleStructureSprites();
     this.requestUpdate();
   }
 
   private onToggleSpecialEffectsButtonClick() {
-    this.userSettings?.toggleFxLayer();
+    this.userSettings.toggleFxLayer();
     this.requestUpdate();
   }
 
   private onToggleDarkModeButtonClick() {
-    this.userSettings?.toggleDarkMode();
-    this.eventBus?.emit(new RedrawGraphicsEvent());
+    this.userSettings.toggleDarkMode();
+    this.eventBus.emit(new RefreshGraphicsEvent());
     this.requestUpdate();
   }
 
   private onToggleRandomNameModeButtonClick() {
-    this.userSettings?.toggleRandomName();
+    this.userSettings.toggleRandomName();
     this.requestUpdate();
   }
 
   private onToggleLeftClickOpensMenu() {
-    this.userSettings?.toggleLeftClickOpenMenu();
+    this.userSettings.toggleLeftClickOpenMenu();
     this.requestUpdate();
   }
 
   private onTogglePerformanceOverlayButtonClick() {
-    this.userSettings?.togglePerformanceOverlay();
+    this.userSettings.togglePerformanceOverlay();
     this.requestUpdate();
   }
 
   private onExitButtonClick() {
     // redirect to the home page
     CrazySDK.redirectTo("/");
+  }
+
+  private onVolumeChange(event: Event) {
+    const volume = parseFloat((event.target as HTMLInputElement).value) / 100;
+    this.userSettings.setBackgroundMusicVolume(volume);
+    SoundManager.setBackgroundMusicVolume(volume);
+    this.requestUpdate();
+  }
+
+  private onSoundEffectsVolumeChange(event: Event) {
+    const volume = parseFloat((event.target as HTMLInputElement).value) / 100;
+    this.userSettings.setSoundEffectsVolume(volume);
+    SoundManager.setSoundEffectsVolume(volume);
+    this.requestUpdate();
   }
 
   render() {
@@ -195,6 +211,55 @@ export class SettingsModal extends LitElement implements Layer {
           </div>
 
           <div class="p-4 space-y-3">
+            <div
+              class="flex gap-3 items-center w-full text-left p-3 hover:bg-slate-700 rounded text-white transition-colors"
+            >
+              <img src=${musicIcon} alt="musicIcon" width="20" height="20" />
+              <div class="flex-1">
+                <div class="font-medium">
+                  ${translateText("user_setting.background_music_volume")}
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  .value=${this.userSettings.backgroundMusicVolume() * 100}
+                  @input=${this.onVolumeChange}
+                  class="w-full border border-slate-500 rounded-lg"
+                />
+              </div>
+              <div class="text-sm text-slate-400">
+                ${Math.round(this.userSettings.backgroundMusicVolume() * 100)}%
+              </div>
+            </div>
+
+            <div
+              class="flex gap-3 items-center w-full text-left p-3 hover:bg-slate-700 rounded text-white transition-colors"
+            >
+              <img
+                src=${musicIcon}
+                alt="soundEffectsIcon"
+                width="20"
+                height="20"
+              />
+              <div class="flex-1">
+                <div class="font-medium">
+                  ${translateText("user_setting.sound_effects_volume")}
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  .value=${this.userSettings.soundEffectsVolume() * 100}
+                  @input=${this.onSoundEffectsVolumeChange}
+                  class="w-full border border-slate-500 rounded-lg"
+                />
+              </div>
+              <div class="text-sm text-slate-400">
+                ${Math.round(this.userSettings.soundEffectsVolume() * 100)}%
+              </div>
+            </div>
+
             <button
               class="flex gap-3 items-center w-full text-left p-3
               hover:bg-slate-700 rounded text-white transition-colors"
@@ -229,13 +294,13 @@ export class SettingsModal extends LitElement implements Layer {
                   ${translateText("user_setting.emojis_label")}
                 </div>
                 <div class="text-sm text-slate-400">
-                  ${this.userSettings?.emojis()
+                  ${this.userSettings.emojis()
                     ? translateText("user_setting.emojis_visible")
                     : translateText("user_setting.emojis_hidden")}
                 </div>
               </div>
               <div class="text-sm text-slate-400">
-                ${this.userSettings?.emojis()
+                ${this.userSettings.emojis()
                   ? translateText("user_setting.on")
                   : translateText("user_setting.off")}
               </div>
@@ -257,13 +322,13 @@ export class SettingsModal extends LitElement implements Layer {
                   ${translateText("user_setting.dark_mode_label")}
                 </div>
                 <div class="text-sm text-slate-400">
-                  ${this.userSettings?.darkMode()
+                  ${this.userSettings.darkMode()
                     ? translateText("user_setting.dark_mode_enabled")
                     : translateText("user_setting.light_mode_enabled")}
                 </div>
               </div>
               <div class="text-sm text-slate-400">
-                ${this.userSettings?.darkMode()
+                ${this.userSettings.darkMode()
                   ? translateText("user_setting.on")
                   : translateText("user_setting.off")}
               </div>
@@ -285,13 +350,13 @@ export class SettingsModal extends LitElement implements Layer {
                   ${translateText("user_setting.special_effects_label")}
                 </div>
                 <div class="text-sm text-slate-400">
-                  ${this.userSettings?.fxLayer()
+                  ${this.userSettings.fxLayer()
                     ? translateText("user_setting.special_effects_enabled")
                     : translateText("user_setting.special_effects_disabled")}
                 </div>
               </div>
               <div class="text-sm text-slate-400">
-                ${this.userSettings?.fxLayer()
+                ${this.userSettings.fxLayer()
                   ? translateText("user_setting.on")
                   : translateText("user_setting.off")}
               </div>
@@ -313,13 +378,13 @@ export class SettingsModal extends LitElement implements Layer {
                   ${translateText("user_setting.structure_sprites_label")}
                 </div>
                 <div class="text-sm text-slate-400">
-                  ${this.userSettings?.structureSprites()
+                  ${this.userSettings.structureSprites()
                     ? translateText("user_setting.structure_sprites_enabled")
                     : translateText("user_setting.structure_sprites_disabled")}
                 </div>
               </div>
               <div class="text-sm text-slate-400">
-                ${this.userSettings?.structureSprites()
+                ${this.userSettings.structureSprites()
                   ? translateText("user_setting.on")
                   : translateText("user_setting.off")}
               </div>
@@ -336,13 +401,13 @@ export class SettingsModal extends LitElement implements Layer {
                   ${translateText("user_setting.anonymous_names_label")}
                 </div>
                 <div class="text-sm text-slate-400">
-                  ${this.userSettings?.anonymousNames()
+                  ${this.userSettings.anonymousNames()
                     ? translateText("user_setting.anonymous_names_enabled")
                     : translateText("user_setting.real_names_shown")}
                 </div>
               </div>
               <div class="text-sm text-slate-400">
-                ${this.userSettings?.anonymousNames()
+                ${this.userSettings.anonymousNames()
                   ? translateText("user_setting.on")
                   : translateText("user_setting.off")}
               </div>
@@ -359,13 +424,13 @@ export class SettingsModal extends LitElement implements Layer {
                   ${translateText("user_setting.left_click_menu")}
                 </div>
                 <div class="text-sm text-slate-400">
-                  ${this.userSettings?.leftClickOpensMenu()
+                  ${this.userSettings.leftClickOpensMenu()
                     ? translateText("user_setting.left_click_opens_menu")
                     : translateText("user_setting.right_click_opens_menu")}
                 </div>
               </div>
               <div class="text-sm text-slate-400">
-                ${this.userSettings?.leftClickOpensMenu()
+                ${this.userSettings.leftClickOpensMenu()
                   ? translateText("user_setting.on")
                   : translateText("user_setting.off")}
               </div>
@@ -387,15 +452,15 @@ export class SettingsModal extends LitElement implements Layer {
                   ${translateText("user_setting.performance_overlay_label")}
                 </div>
                 <div class="text-sm text-slate-400">
-                  ${this.userSettings?.performanceOverlay()
+                  ${this.userSettings.performanceOverlay()
                     ? translateText("user_setting.performance_overlay_enabled")
                     : translateText(
-                      "user_setting.performance_overlay_disabled",
-                    )}
+                        "user_setting.performance_overlay_disabled",
+                      )}
                 </div>
               </div>
               <div class="text-sm text-slate-400">
-                ${this.userSettings?.performanceOverlay()
+                ${this.userSettings.performanceOverlay()
                   ? translateText("user_setting.on")
                   : translateText("user_setting.off")}
               </div>

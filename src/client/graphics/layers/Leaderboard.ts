@@ -1,13 +1,13 @@
-import { EventBus, GameEvent } from "../../../core/EventBus";
-import { GameView, PlayerView, UnitView } from "../../../core/game/GameView";
 import { LitElement, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { Layer } from "./Layer";
-import { renderNumber } from "../../Utils";
 import { repeat } from "lit/directives/repeat.js";
 import { translateText } from "../../../client/Utils";
+import { EventBus, GameEvent } from "../../../core/EventBus";
+import { GameView, PlayerView, UnitView } from "../../../core/game/GameView";
+import { renderNumber } from "../../Utils";
+import { Layer } from "./Layer";
 
-type Entry = {
+interface Entry {
   name: string;
   position: number;
   score: string;
@@ -15,7 +15,7 @@ type Entry = {
   troops: string;
   isMyPlayer: boolean;
   player: PlayerView;
-};
+}
 
 export class GoToPlayerEvent implements GameEvent {
   constructor(public player: PlayerView) {}
@@ -99,13 +99,13 @@ export class Leaderboard extends LitElement implements Layer {
     const numTilesWithoutFallout =
       this.game.numLandTiles() - this.game.numTilesWithFallout();
 
-    const playersToShow = this.showTopFive ? sorted.slice(0, 5) : sorted;
+    const alivePlayers = sorted.filter((player) => player.isAlive());
+    const playersToShow = this.showTopFive
+      ? alivePlayers.slice(0, 5)
+      : alivePlayers;
 
     this.players = playersToShow.map((player, index) => {
-      let troops = player.troops() / 10;
-      if (!player.isAlive()) {
-        troops = 0;
-      }
+      const troops = player.troops() / 10;
       return {
         name: player.displayName(),
         position: index + 1,
@@ -115,7 +115,7 @@ export class Leaderboard extends LitElement implements Layer {
         gold: renderNumber(player.gold()),
         troops: renderNumber(troops),
         isMyPlayer: player === myPlayer,
-        player,
+        player: player,
       };
     });
 
@@ -131,22 +131,21 @@ export class Leaderboard extends LitElement implements Layer {
         }
       }
 
-      let myPlayerTroops = myPlayer.troops() / 10;
-      if (!myPlayer.isAlive()) {
-        myPlayerTroops = 0;
+      if (myPlayer.isAlive()) {
+        const myPlayerTroops = myPlayer.troops() / 10;
+        this.players.pop();
+        this.players.push({
+          name: myPlayer.displayName(),
+          position: place,
+          score: formatPercentage(
+            myPlayer.numTilesOwned() / this.game.numLandTiles(),
+          ),
+          gold: renderNumber(myPlayer.gold()),
+          troops: renderNumber(myPlayerTroops),
+          isMyPlayer: true,
+          player: myPlayer,
+        });
       }
-      this.players.pop();
-      this.players.push({
-        name: myPlayer.displayName(),
-        position: place,
-        score: formatPercentage(
-          myPlayer.numTilesOwned() / this.game.numLandTiles(),
-        ),
-        gold: renderNumber(myPlayer.gold()),
-        troops: renderNumber(myPlayerTroops),
-        isMyPlayer: true,
-        player: myPlayer,
-      });
     }
 
     this.requestUpdate();
@@ -255,9 +254,7 @@ export class Leaderboard extends LitElement implements Layer {
       </div>
 
       <button
-        class="mt-1 px-1.5 py-0.5 md:px-2 md:py-0.5 text-xs md:text-xs
-        lg:text-sm border border-white/20 hover:bg-white/10 text-white mx-auto
-        block"
+        class="mt-1 px-1.5 py-0.5 md:px-2 md:py-0.5 text-xs md:text-xs lg:text-sm border border-white/20 hover:bg-white/10 text-white mx-auto block"
         @click=${() => {
           this.showTopFive = !this.showTopFive;
           this.updateLeaderboard();

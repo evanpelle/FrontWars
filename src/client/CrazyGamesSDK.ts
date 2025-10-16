@@ -1,5 +1,4 @@
 declare global {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
   interface Window {
     CrazyGames: {
       SDK: {
@@ -69,13 +68,6 @@ class CrazyGamesSDKManager {
       script.addEventListener("load", async () => {
         try {
           await window.CrazyGames.SDK.init();
-          // Request responsive banners for menu
-          // void CrazySDK.requestResponsiveBanner("cg-banner-left");
-          // void CrazySDK.requestResponsiveBanner("cg-banner-bottom");
-          void CrazySDK.requestResponsiveBanner("cg-banner-right");
-          setInterval(() => {
-            void CrazySDK.requestResponsiveBanner("cg-banner-right");
-          }, 60000);
           this.isInitialized = true;
           this.gameLoadComplete();
         } finally {
@@ -104,7 +96,7 @@ class CrazyGamesSDKManager {
 
     const user = await window.CrazyGames.SDK.user.getUser();
     console.log("[CrazyGames SDK] user", user);
-    return user?.username || "";
+    return user?.username ?? "";
   }
 
   async isInstantMultiplayer(): Promise<boolean> {
@@ -186,7 +178,7 @@ class CrazyGamesSDKManager {
       } else {
         // Fallback for non-CrazyGames environment
         const urlParams = new URLSearchParams(window.location.search);
-        const value = urlParams.get(param) || "";
+        const value = urlParams.get(param) ?? "";
         callback(null, value);
       }
     } catch (error) {
@@ -196,6 +188,8 @@ class CrazyGamesSDKManager {
   }
 
   async requestMidGameAd(callback: () => void): Promise<void> {
+    await this.waitForLoad();
+
     if (!this.isCrazyGames || !window.CrazyGames?.SDK?.ad?.requestAd) {
       callback();
       return;
@@ -214,6 +208,8 @@ class CrazyGamesSDKManager {
 
   async requestBanner(id: string, width: number, height: number): Promise<void> {
     if (!this.isCrazyGames) return;
+    await this.waitForLoad();
+
     try {
       await window.CrazyGames.SDK.banner.requestBanner({ id, width, height });
     } catch (error) {
@@ -223,6 +219,8 @@ class CrazyGamesSDKManager {
 
   async requestResponsiveBanner(id: string): Promise<void> {
     if (!this.isCrazyGames) return;
+    await this.waitForLoad();
+
     try {
       await window.CrazyGames.SDK.banner.requestResponsiveBanner(id);
     } catch (error) {

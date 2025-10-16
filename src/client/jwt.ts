@@ -1,13 +1,15 @@
+import { decodeJwt } from "jose";
+import { z } from "zod";
 import {
+  PlayerProfile,
+  PlayerProfileSchema,
   RefreshResponseSchema,
   TokenPayload,
   TokenPayloadSchema,
   UserMeResponse,
   UserMeResponseSchema,
 } from "../core/ApiSchemas";
-import { decodeJwt } from "jose";
 import { getServerConfigFromClient } from "../core/configuration/ConfigLoader";
-import { z } from "zod";
 
 function getAudience() {
   const { hostname } = new URL(window.location.href);
@@ -17,9 +19,16 @@ function getAudience() {
 
 export function getApiBase() {
   const domainname = getAudience();
-  return domainname === "localhost"
-    ? (localStorage.getItem("apiHost") ?? "http://localhost:8787")
-    : `https://api.${domainname}`;
+
+  if (domainname === "localhost") {
+    const apiDomain = process?.env?.API_DOMAIN;
+    if (apiDomain) {
+      return `https://${apiDomain}`;
+    }
+    return localStorage.getItem("apiHost") ?? "http://localhost:8787";
+  }
+
+  return `https://api.${domainname}`;
 }
 
 function getToken(): string | null {
@@ -71,13 +80,34 @@ export function discordLogin() {
   window.location.href = `${getApiBase()}/login/discord?redirect_uri=${window.location.href}`;
 }
 
+export async function tokenLogin(token: string): Promise<string | null> {
+  const response = await fetch(
+    `${getApiBase()}/login/token?login-token=${token}`,
+  );
+  if (response.status !== 200) {
+    console.error("Token login failed", response);
+    return null;
+  }
+  const json = await response.json();
+  const { jwt, email } = json;
+  const payload = decodeJwt(jwt);
+  const result = TokenPayloadSchema.safeParse(payload);
+  if (!result.success) {
+    console.error("Invalid token", result.error, result.error.message);
+    return null;
+  }
+  clearToken();
+  localStorage.setItem("token", jwt);
+  return email;
+}
+
 export function getAuthHeader(): string {
   const token = getToken();
   if (!token) return "";
   return `Bearer ${token}`;
 }
 
-export async function logOut(allSessions = false) {
+export async function logOut(allSessions: boolean = false) {
   const token = getToken();
   if (token === null) return;
   clearToken();
@@ -138,7 +168,8 @@ function _isLoggedIn(): IsLoggedInResponse {
       logOut();
       return false;
     }
-    if (aud !== getAudience()) {
+    const myAud = getAudience();
+    if (myAud !== "localhost" && aud !== myAud) {
       // JWT was not issued for this website
       console.error(
         'unexpected "aud" claim value',
@@ -244,6 +275,45 @@ export async function getUserMe(): Promise<UserMeResponse | false> {
     return result.data;
   } catch (e) {
     __isLoggedIn = false;
+    return false;
+  }
+}
+
+export async function fetchPlayerById(
+  playerId: string,
+): Promise<PlayerProfile | false> {
+  try {
+    const base = getApiBase();
+    const token = getToken();
+    if (!token) return false;
+    const url = `${base}/player/${encodeURIComponent(playerId)}`;
+
+    const res = await fetch(url, {
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (res.status !== 200) {
+      console.warn(
+        "fetchPlayerById: unexpected status",
+        res.status,
+        res.statusText,
+      );
+      return false;
+    }
+
+    const json = await res.json();
+    const parsed = PlayerProfileSchema.safeParse(json);
+    if (!parsed.success) {
+      console.warn("fetchPlayerById: Zod validation failed", parsed.error);
+      return false;
+    }
+
+    return parsed.data;
+  } catch (err) {
+    console.warn("fetchPlayerById: request failed", err);
     return false;
   }
 }

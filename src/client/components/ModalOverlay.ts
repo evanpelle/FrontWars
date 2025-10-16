@@ -3,7 +3,7 @@ import { customElement, property } from "lit/decorators";
 
 @customElement("modal-overlay")
 export class ModalOverlay extends LitElement {
-  @property({ reflect: true }) public visible = false;
+  @property({ reflect: true }) public visible: boolean = false;
 
   static styles = css`
     .overlay {

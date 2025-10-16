@@ -1,7 +1,7 @@
-export type Layer = {
+export interface Layer {
   init?: () => void;
-  tick?: () => void | Promise<void>;
+  tick?: () => void;
   renderLayer?: (context: CanvasRenderingContext2D) => void;
   shouldTransform?: () => boolean;
   redraw?: () => void;
-};
+}

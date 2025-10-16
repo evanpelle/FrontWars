@@ -1,16 +1,16 @@
-import { COLORS, MenuElement, MenuElementParams } from "./RadialMenuElements";
-import { ChatModal, QuickChatPhrase, quickChatPhrases } from "./ChatModal";
-import { GameView, PlayerView } from "../../../core/game/GameView";
 import { EventBus } from "../../../core/EventBus";
+import { GameView, PlayerView } from "../../../core/game/GameView";
 import { SendQuickChatEvent } from "../../Transport";
 import { translateText } from "../../Utils";
+import { ChatModal, QuickChatPhrase, quickChatPhrases } from "./ChatModal";
+import { COLORS, MenuElement, MenuElementParams } from "./RadialMenuElements";
 
 export class ChatIntegration {
-  private readonly ctModal: ChatModal;
+  private ctModal: ChatModal;
 
   constructor(
-    private readonly game: GameView,
-    private readonly eventBus: EventBus,
+    private game: GameView,
+    private eventBus: EventBus,
   ) {
     this.ctModal = document.querySelector("chat-modal") as ChatModal;
 

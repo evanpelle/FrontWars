@@ -1,12 +1,15 @@
+import { z } from "zod";
+import { EventBus, GameEvent } from "../core/EventBus";
 import {
   AllPlayers,
   GameType,
   Gold,
   PlayerID,
-  PlayerType,
   Tick,
   UnitType,
 } from "../core/game/Game";
+import { TileRef } from "../core/game/GameMap";
+import { PlayerView } from "../core/game/GameView";
 import {
   AllPlayersStats,
   ClientHashMessage,
@@ -20,13 +23,9 @@ import {
   ServerMessageSchema,
   Winner,
 } from "../core/Schemas";
-import { EventBus, GameEvent } from "../core/EventBus";
+import { replacer } from "../core/Util";
 import { LobbyConfig } from "./ClientGameRunner";
 import { LocalServer } from "./LocalServer";
-import { PlayerView } from "../core/game/GameView";
-import { TileRef } from "../core/game/GameMap";
-import { replacer } from "../core/Util";
-import { z } from "zod";
 
 export class PauseGameEvent implements GameEvent {
   constructor(public readonly paused: boolean) {}
@@ -172,18 +171,18 @@ export class SendKickPlayerIntentEvent implements GameEvent {
 export class Transport {
   private socket: WebSocket | null = null;
 
-  private localServer: LocalServer | undefined;
+  private localServer: LocalServer;
 
-  private readonly buffer: string[] = [];
+  private buffer: string[] = [];
 
-  private onconnect: (() => void) | undefined;
-  private onmessage: ((msg: ServerMessage) => void) | undefined;
+  private onconnect: () => void;
+  private onmessage: (msg: ServerMessage) => void;
 
   private pingInterval: number | null = null;
   public readonly isLocal: boolean;
   constructor(
-    private readonly lobbyConfig: LobbyConfig,
-    private readonly eventBus: EventBus,
+    private lobbyConfig: LobbyConfig,
+    private eventBus: EventBus,
   ) {
     // If gameRecord is not null, we are replaying an archived game.
     // For multiplayer games, GameConfig is not known until game starts.
@@ -328,7 +327,6 @@ export class Transport {
     };
     this.socket.onmessage = (event: MessageEvent) => {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         const parsed = JSON.parse(event.data);
         const result = ServerMessageSchema.safeParse(parsed);
         if (!result.success) {
@@ -336,7 +334,7 @@ export class Transport {
           console.error("Error parsing server message", error);
           return;
         }
-        this.onmessage?.(result.data);
+        this.onmessage(result.data);
       } catch (e) {
         console.error("Error in onmessage handler:", e, event.data);
         return;
@@ -362,14 +360,12 @@ export class Transport {
   }
 
   public reconnect() {
-    if (this.onconnect === undefined) return;
-    if (this.onmessage === undefined) return;
     this.connect(this.onconnect, this.onmessage);
   }
 
   public turnComplete() {
     if (this.isLocal) {
-      this.localServer?.turnComplete();
+      this.localServer.turnComplete();
     }
   }
 
@@ -381,14 +377,13 @@ export class Transport {
       lastTurn: numTurns,
       token: this.lobbyConfig.token,
       username: this.lobbyConfig.playerName,
-      flag: this.lobbyConfig.flag,
-      pattern: this.lobbyConfig.pattern,
+      cosmetics: this.lobbyConfig.cosmetics,
     } satisfies ClientJoinMessage);
   }
 
-  leaveGame(saveFullGame = false) {
+  leaveGame() {
     if (this.isLocal) {
-      this.localServer?.endGame(saveFullGame);
+      this.localServer.endGame();
       return;
     }
     this.stopPing();
@@ -445,10 +440,6 @@ export class Transport {
     this.sendIntent({
       type: "spawn",
       clientID: this.lobbyConfig.clientID,
-      flag: this.lobbyConfig.flag,
-      pattern: this.lobbyConfig.pattern,
-      name: this.lobbyConfig.playerName,
-      playerType: PlayerType.Human,
       tile: event.tile,
     });
   }
@@ -548,13 +539,13 @@ export class Transport {
 
   private onPauseGameEvent(event: PauseGameEvent) {
     if (!this.isLocal) {
-      console.log("cannot pause multiplayer games");
+      console.log(`cannot pause multiplayer games`);
       return;
     }
     if (event.paused) {
-      this.localServer?.pause();
+      this.localServer.pause();
     } else {
-      this.localServer?.resume();
+      this.localServer.resume();
     }
   }
 
@@ -584,7 +575,7 @@ export class Transport {
     } else {
       console.log(
         "WebSocket is not open. Current state:",
-        this.socket?.readyState,
+        this.socket!.readyState,
       );
       console.log("attempting reconnect");
     }
@@ -635,7 +626,7 @@ export class Transport {
     if (this.isLocal || this.socket?.readyState === WebSocket.OPEN) {
       const msg = {
         type: "intent",
-        intent,
+        intent: intent,
       } satisfies ClientIntentMessage;
       this.sendMsg(msg);
     } else {
@@ -650,7 +641,7 @@ export class Transport {
   private sendMsg(msg: ClientMessage) {
     if (this.isLocal) {
       // Forward message to local server
-      this.localServer?.onMessage(msg);
+      this.localServer.onMessage(msg);
       return;
     } else if (this.socket === null) {
       // Socket missing, do nothing
@@ -662,9 +653,7 @@ export class Transport {
       console.warn("socket not ready, closing and trying later");
       this.socket.close();
       this.socket = null;
-      if (this.onconnect && this.onmessage) {
-        this.connectRemote(this.onconnect, this.onmessage);
-      }
+      this.connectRemote(this.onconnect, this.onmessage);
       this.buffer.push(str);
     } else {
       // Send the message directly

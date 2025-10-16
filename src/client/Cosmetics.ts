@@ -1,52 +1,31 @@
-import { Cosmetics, CosmeticsSchema, Pattern } from "../core/CosmeticSchemas";
-import {
-  StripeCreateCheckoutSessionResponseSchema,
-  UserMeResponse,
-} from "../core/ApiSchemas";
+import { UserMeResponse } from "../core/ApiSchemas";
+import { ColorPalette, Cosmetics, Pattern } from "../core/CosmeticSchemas";
 import { getApiBase, getAuthHeader } from "./jwt";
-import { z } from "zod";
+import { getPersistentID } from "./Main";
+import cosmetics from "../../resources/cosmetics/cosmetics.json";
 
-export async function patterns(
-  userMe: UserMeResponse | null,
-): Promise<Pattern[]> {
-  const cosmetics = await getCosmetics();
-
-  if (cosmetics === undefined) {
-    return [];
+export async function handlePurchase(
+  pattern: Pattern,
+  colorPalette: ColorPalette | null,
+) {
+  if (pattern.product === null) {
+    alert("This pattern is not available for purchase.");
+    return;
   }
 
-  const patterns: Pattern[] = [];
-  const playerFlares = new Set(userMe?.player.flares);
-
-  for (const name in cosmetics.patterns) {
-    const patternData = cosmetics.patterns[name];
-    const hasAccess = playerFlares.has(`pattern:${name}`);
-    if (hasAccess) {
-      // Remove product info because player already has access.
-      patternData.product = null;
-      patterns.push(patternData);
-    } else if (patternData.product !== null) {
-      // Player doesn't have access, but product is available for purchase.
-      patterns.push(patternData);
-    }
-    // If player doesn't have access and product is null, don't show it.
-  }
-  return patterns;
-}
-
-export async function handlePurchase(priceId: string) {
   const response = await fetch(
     `${getApiBase()}/stripe/create-checkout-session`,
     {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "authorization": getAuthHeader(),
+        authorization: getAuthHeader(),
+        "X-Persistent-Id": getPersistentID(),
       },
       body: JSON.stringify({
-        priceId,
-        successUrl: `${window.location.origin}#purchase-completed=true`,
-        cancelUrl: `${window.location.origin}#purchase-completed=false`,
+        priceId: pattern.product.priceId,
+        hostname: window.location.origin,
+        colorPaletteName: colorPalette?.name,
       }),
     },
   );
@@ -63,34 +42,62 @@ export async function handlePurchase(priceId: string) {
     return;
   }
 
-  const json = await response.json();
-  const parsed = StripeCreateCheckoutSessionResponseSchema.safeParse(json);
-  if (!parsed.success) {
-    const error = z.prettifyError(parsed.error);
-    console.error("Invalid checkout session response:", error);
-    alert("Checkout failed. Please try again later.");
-    return;
-  }
-  const { url } = parsed.data;
+  const { url } = await response.json();
 
   // Redirect to Stripe checkout
   window.location.href = url;
 }
 
-async function getCosmetics(): Promise<Cosmetics | undefined> {
-  try {
-    const response = await fetch(`${getApiBase()}/cosmetics.json`);
-    if (!response.ok) {
-      console.error(`HTTP error! status: ${response.status}`);
-      return;
-    }
-    const result = CosmeticsSchema.safeParse(await response.json());
-    if (!result.success) {
-      console.error(`Invalid cosmetics: ${result.error.message}`);
-      return;
-    }
-    return result.data;
-  } catch (error) {
-    console.error("Error getting cosmetics:", error);
+export async function fetchCosmetics(): Promise<Cosmetics | null> {
+  return cosmetics as any;
+}
+
+export function patternRelationship(
+  pattern: Pattern,
+  colorPalette: { name: string; isArchived?: boolean } | null,
+  userMeResponse: UserMeResponse | null,
+  affiliateCode: string | null,
+): "owned" | "purchasable" | "blocked" {
+  // Make all patterns free/owned while preserving archival hiding.
+  if (colorPalette?.isArchived) {
+    return "blocked";
   }
+  return "owned";
+
+  // const flares = userMeResponse?.player.flares ?? [];
+  // if (flares.includes("pattern:*")) {
+  //   return "owned";
+  // }
+
+  // if (colorPalette === null) {
+  //   // For backwards compatibility only show non-colored patterns if they are owned.
+  //   if (flares.includes(`pattern:${pattern.name}`)) {
+  //     return "owned";
+  //   }
+  //   return "blocked";
+  // }
+
+  // const requiredFlare = `pattern:${pattern.name}:${colorPalette.name}`;
+
+  // if (flares.includes(requiredFlare)) {
+  //   return "owned";
+  // }
+
+  // if (pattern.product === null) {
+  //   // We don't own it and it's not for sale, so don't show it.
+  //   return "blocked";
+  // }
+
+  // if (colorPalette?.isArchived) {
+  //   // We don't own the color palette, and it's archived, so don't show it.
+  //   return "blocked";
+  // }
+
+  // if (affiliateCode !== pattern.affiliateCode) {
+  //   // Pattern is for sale, but it's not the right store to show it on.
+  //   return "blocked";
+  // }
+
+  // // Patterns is for sale, and it's the right store to show it on.
+  // return "purchasable";
 }

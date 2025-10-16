@@ -24,3 +24,29 @@
   --secondaryColorHoverDark: #4b5563;
   --fontColorDark: #f3f4f6;
 }
+
+/* Seasonal: Halloween palette (light mode) */
+:root.halloween {
+  --boxBackgroundColor: #2d1b4ecc; /* dark mystical purple backdrop, lighter than dark theme */
+  --fontColor: #2f2f2f; /* charcoal black for excellent contrast */
+  --primaryColor: #cc5500; /* darker pumpkin orange */
+  --primaryColorHover: #b34700; /* darker orange for hover */
+  --primaryColorDisabled: linear-gradient(
+    to right,
+    #8b0000,
+    #660000
+  ); /* blood red gradient for disabled state */
+  --secondaryColor: #fed7aa; /* light pumpkin orange for spooky warmth */
+  --secondaryColorHover: #fdba74; /* slightly darker orange for hover */
+}
+
+/* Seasonal: Halloween palette (dark mode) */
+.dark.halloween {
+  --boxBackgroundColor: #1a1a1acc; /* near black with transparency for true dark mode */
+  --fontColorDark: #f8f8ff; /* ghost white for excellent contrast on dark */
+  --primaryColorDark: #cc5500; /* darker pumpkin orange for dark mode */
+  --primaryColorHoverDark: #b34700; /* darker orange for hover in dark mode */
+  --primaryColorDisabledDark: #4a4a4a; /* neutral dark gray */
+  --secondaryColorDark: #2f2f2f; /* charcoal for secondary elements */
+  --secondaryColorHoverDark: #404040; /* slightly lighter charcoal for hover */
+}

@@ -1,60 +1,60 @@
+import { PriorityQueue } from "@datastructures-js/priority-queue";
+import { Colord } from "colord";
+import { Theme } from "../../../core/configuration/Config";
+import { EventBus } from "../../../core/EventBus";
+import { Cell, PlayerType, UnitType } from "../../../core/game/Game";
+import { euclDistFN, TileRef } from "../../../core/game/GameMap";
+import { GameUpdateType } from "../../../core/game/GameUpdates";
+import { GameView, PlayerView } from "../../../core/game/GameView";
+import { UserSettings } from "../../../core/game/UserSettings";
+import { PseudoRandom } from "../../../core/PseudoRandom";
 import {
   AlternateViewEvent,
   DragEvent,
   MouseOverEvent,
-  RedrawGraphicsEvent,
 } from "../../InputHandler";
-import { Cell, PlayerType, UnitType } from "../../../core/game/Game";
-import { GameView, PlayerView } from "../../../core/game/GameView";
-import { TileRef, euclDistFN } from "../../../core/game/GameMap";
-import { Colord } from "colord";
-import { EventBus } from "../../../core/EventBus";
-import { GameUpdateType } from "../../../core/game/GameUpdates";
-import { Layer } from "./Layer";
-import { PriorityQueue } from "@datastructures-js/priority-queue";
-import { PseudoRandom } from "../../../core/PseudoRandom";
-import { Theme } from "../../../core/configuration/Config";
 import { TransformHandler } from "../TransformHandler";
-import { UserSettings } from "../../../core/game/UserSettings";
+import { Layer } from "./Layer";
 
 export class TerritoryLayer implements Layer {
-  private readonly userSettings: UserSettings;
-  private canvas: HTMLCanvasElement | undefined;
-  private context: CanvasRenderingContext2D | undefined;
-  private imageData: ImageData | undefined;
-  private alternativeImageData: ImageData | undefined;
+  private userSettings: UserSettings;
+  private canvas: HTMLCanvasElement;
+  private context: CanvasRenderingContext2D;
+  private imageData: ImageData;
+  private alternativeImageData: ImageData;
+  private borderAnimTime = 0;
 
   private cachedTerritoryPatternsEnabled: boolean | undefined;
 
-  private readonly tileToRenderQueue: PriorityQueue<{
+  private tileToRenderQueue: PriorityQueue<{
     tile: TileRef;
     lastUpdate: number;
   }> = new PriorityQueue((a, b) => {
     return a.lastUpdate - b.lastUpdate;
   });
-  private readonly random = new PseudoRandom(123);
-  private readonly theme: Theme;
+  private random = new PseudoRandom(123);
+  private theme: Theme;
 
   // Used for spawn highlighting
-  private highlightCanvas: HTMLCanvasElement | undefined;
-  private highlightContext: CanvasRenderingContext2D | undefined;
+  private highlightCanvas: HTMLCanvasElement;
+  private highlightContext: CanvasRenderingContext2D;
 
   private highlightedTerritory: PlayerView | null = null;
 
   private alternativeView = false;
-  private readonly lastDragTime = 0;
-  private readonly nodrawDragDuration = 200;
+  private lastDragTime = 0;
+  private nodrawDragDuration = 200;
   private lastMousePosition: { x: number; y: number } | null = null;
 
-  private readonly refreshRate = 10; //refresh every 10ms
+  private refreshRate = 10; //refresh every 10ms
   private lastRefresh = 0;
 
   private lastFocusedPlayer: PlayerView | null = null;
 
   constructor(
-    private readonly game: GameView,
-    private readonly eventBus: EventBus,
-    private readonly transformHandler: TransformHandler,
+    private game: GameView,
+    private eventBus: EventBus,
+    private transformHandler: TransformHandler,
     userSettings: UserSettings,
   ) {
     this.userSettings = userSettings;
@@ -74,11 +74,6 @@ export class TerritoryLayer implements Layer {
   }
 
   tick() {
-    const prev = this.cachedTerritoryPatternsEnabled;
-    this.cachedTerritoryPatternsEnabled = this.userSettings.territoryPatterns();
-    if (prev !== undefined && prev !== this.cachedTerritoryPatternsEnabled) {
-      this.eventBus.emit(new RedrawGraphicsEvent());
-    }
     this.game.recentlyUpdatedTiles().forEach((t) => this.enqueueTile(t));
     const updates = this.game.updatesSinceLastTick();
     const unitUpdates = updates !== null ? updates[GameUpdateType.Unit] : [];
@@ -154,21 +149,33 @@ export class TerritoryLayer implements Layer {
     if (!this.game.inSpawnPhase()) {
       return;
     }
+
+    this.spawnHighlight();
+  }
+
+  private spawnHighlight() {
     if (this.game.ticks() % 5 === 0) {
       return;
     }
 
-    this.highlightContext?.clearRect(
+    this.highlightContext.clearRect(
       0,
       0,
       this.game.width(),
       this.game.height(),
     );
+
+    this.drawFocusedPlayerHighlight();
+
     const humans = this.game
       .playerViews()
       .filter((p) => p.type() === PlayerType.Human);
 
+    const focusedPlayer = this.game.focusedPlayer();
     for (const human of humans) {
+      if (human === focusedPlayer) {
+        continue;
+      }
       const center = human.nameLocation();
       if (!center) {
         continue;
@@ -195,6 +202,34 @@ export class TerritoryLayer implements Layer {
         }
       }
     }
+  }
+
+  private drawFocusedPlayerHighlight() {
+    const focusedPlayer = this.game.focusedPlayer();
+
+    if (!focusedPlayer) {
+      return;
+    }
+    const center = focusedPlayer.nameLocation();
+    if (!center) {
+      return;
+    }
+    // Breathing border animation
+    this.borderAnimTime += 3;
+    const minPadding = 6;
+    const maxPadding = 12;
+    // Range: [minPadding..maxPadding]
+    const breathingPadding =
+      minPadding +
+      (maxPadding - minPadding) *
+        (0.5 + 0.5 * Math.sin(this.borderAnimTime * 0.3));
+
+    this.drawBreathingRing(
+      center.x,
+      center.y,
+      breathingPadding,
+      this.theme.spawnHighlightColor(),
+    );
   }
 
   init() {
@@ -322,8 +357,6 @@ export class TerritoryLayer implements Layer {
 
   initImageData() {
     this.game.forEachTile((tile) => {
-      if (this.imageData === undefined) throw new Error("Not initialized");
-      if (this.alternativeImageData === undefined) throw new Error("Not initialized");
       const cell = new Cell(this.game.x(tile), this.game.y(tile));
       const index = cell.y * this.game.width() + cell.x;
       const offset = index * 4;
@@ -333,11 +366,6 @@ export class TerritoryLayer implements Layer {
   }
 
   renderLayer(context: CanvasRenderingContext2D) {
-    if (this.canvas === undefined) throw new Error("Not initialized");
-    if (this.highlightCanvas === undefined) throw new Error("Not initialized");
-    if (this.context === undefined) throw new Error("Not initialized");
-    if (this.imageData === undefined) throw new Error("Not initialized");
-    if (this.alternativeImageData === undefined) throw new Error("Not initialized");
     const now = Date.now();
     if (
       now > this.lastDragTime + this.nodrawDragDuration &&
@@ -400,7 +428,7 @@ export class TerritoryLayer implements Layer {
         break;
       }
 
-      const { tile } = entry;
+      const tile = entry.tile;
       this.paintTerritory(tile);
       for (const neighbor of this.game.neighbors(tile)) {
         this.paintTerritory(neighbor, true);
@@ -408,12 +436,10 @@ export class TerritoryLayer implements Layer {
     }
   }
 
-  paintTerritory(tile: TileRef, isBorder = false) {
+  paintTerritory(tile: TileRef, isBorder: boolean = false) {
     if (isBorder && !this.game.hasOwner(tile)) {
       return;
     }
-    if (this.imageData === undefined) throw new Error("Not initialized");
-    if (this.alternativeImageData === undefined) throw new Error("Not initialized");
 
     if (!this.game.hasOwner(tile)) {
       if (this.game.hasFallout(tile)) {
@@ -430,64 +456,37 @@ export class TerritoryLayer implements Layer {
       return;
     }
     const owner = this.game.owner(tile) as PlayerView;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const isHighlighted =
       this.highlightedTerritory &&
       this.highlightedTerritory.id() === owner.id();
     const myPlayer = this.game.myPlayer();
 
     if (this.game.isBorder(tile)) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const playerIsFocused = owner && this.game.focusedPlayer() === owner;
       if (myPlayer) {
         const alternativeColor = this.alternateViewColor(owner);
         this.paintTile(this.alternativeImageData, tile, alternativeColor, 255);
       }
-      if (
-        this.game.hasUnitNearby(
-          tile,
-          this.game.config().defensePostRange(),
-          UnitType.DefensePost,
-          owner.id(),
-        )
-      ) {
-        const borderColors = this.theme.defendedBorderColors(owner);
-        const x = this.game.x(tile);
-        const y = this.game.y(tile);
-        const lightTile =
-          (x % 2 === 0 && y % 2 === 0) || (y % 2 === 1 && x % 2 === 1);
-        const borderColor = lightTile ? borderColors.light : borderColors.dark;
-        this.paintTile(this.imageData, tile, borderColor, 255);
-      } else {
-        const useBorderColor = playerIsFocused
-          ? this.theme.focusedBorderColor()
-          : this.theme.borderColor(owner);
-        this.paintTile(this.imageData, tile, useBorderColor, 255);
-      }
-    } else {
-      // Interior tiles
-      const { pattern } = owner.cosmetics;
-      const patternsEnabled = this.cachedTerritoryPatternsEnabled ?? false;
+      const isDefended = this.game.hasUnitNearby(
+        tile,
+        this.game.config().defensePostRange(),
+        UnitType.DefensePost,
+        owner.id(),
+      );
 
+      this.paintTile(
+        this.imageData,
+        tile,
+        owner.borderColor(tile, isDefended),
+        255,
+      );
+    } else {
       // Alternative view only shows borders.
       this.clearAlternativeTile(tile);
 
-      if (pattern === undefined || patternsEnabled === false) {
-        this.paintTile(
-          this.imageData,
-          tile,
-          this.theme.territoryColor(owner),
-          150,
-        );
-      } else {
-        const x = this.game.x(tile);
-        const y = this.game.y(tile);
-        const baseColor = this.theme.territoryColor(owner);
-
-        const decoder = owner.patternDecoder();
-        const color = decoder?.isSet(x, y)
-          ? baseColor.darken(0.125)
-          : baseColor;
-        this.paintTile(this.imageData, tile, color, 150);
-      }
+      this.paintTile(this.imageData, tile, owner.territoryColor(tile), 150);
     }
   }
 
@@ -509,7 +508,6 @@ export class TerritoryLayer implements Layer {
   }
 
   paintAlternateViewTile(tile: TileRef, other: PlayerView) {
-    if (this.alternativeImageData === undefined) throw new Error("Not initialized");
     const color = this.alternateViewColor(other);
     this.paintTile(this.alternativeImageData, tile, color, 255);
   }
@@ -524,21 +522,18 @@ export class TerritoryLayer implements Layer {
 
   clearTile(tile: TileRef) {
     const offset = tile * 4;
-    if (this.imageData === undefined) throw new Error("Not initialized");
-    if (this.alternativeImageData === undefined) throw new Error("Not initialized");
     this.imageData.data[offset + 3] = 0; // Set alpha to 0 (fully transparent)
     this.alternativeImageData.data[offset + 3] = 0; // Set alpha to 0 (fully transparent)
   }
 
   clearAlternativeTile(tile: TileRef) {
     const offset = tile * 4;
-    if (this.alternativeImageData === undefined) throw new Error("Not initialized");
     this.alternativeImageData.data[offset + 3] = 0; // Set alpha to 0 (fully transparent)
   }
 
   enqueueTile(tile: TileRef) {
     this.tileToRenderQueue.push({
-      tile,
+      tile: tile,
       lastUpdate: this.game.ticks() + this.random.nextFloat(0, 0.5),
     });
   }
@@ -554,7 +549,6 @@ export class TerritoryLayer implements Layer {
     this.clearTile(tile);
     const x = this.game.x(tile);
     const y = this.game.y(tile);
-    if (this.highlightContext === undefined) throw new Error("Not initialized");
     this.highlightContext.fillStyle = color.alpha(alpha / 255).toRgbString();
     this.highlightContext.fillRect(x, y, 1, 1);
   }
@@ -562,7 +556,20 @@ export class TerritoryLayer implements Layer {
   clearHighlightTile(tile: TileRef) {
     const x = this.game.x(tile);
     const y = this.game.y(tile);
-    if (this.highlightContext === undefined) throw new Error("Not initialized");
     this.highlightContext.clearRect(x, y, 1, 1);
+  }
+  private drawBreathingRing(
+    cx: number,
+    cy: number,
+    radius: number,
+    color: Colord,
+  ) {
+    const ctx = this.highlightContext;
+    if (!ctx) return;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.strokeStyle = color.toRgbString();
+    ctx.lineWidth = 4;
+    ctx.stroke();
   }
 }

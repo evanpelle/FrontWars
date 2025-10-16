@@ -1,16 +1,17 @@
+import { Colord } from "colord";
+import { Theme } from "../../../core/configuration/Config";
+import { PlayerID } from "../../../core/game/Game";
+import { TileRef } from "../../../core/game/GameMap";
 import {
   GameUpdateType,
+  RailroadUpdate,
   RailTile,
   RailType,
-  RailroadUpdate,
 } from "../../../core/game/GameUpdates";
-import { getBridgeRects, getRailroadRects } from "./RailroadSprites";
-import { Colord } from "colord";
 import { GameView } from "../../../core/game/GameView";
+import { TransformHandler } from "../TransformHandler";
 import { Layer } from "./Layer";
-import { PlayerID } from "../../../core/game/Game";
-import { Theme } from "../../../core/configuration/Config";
-import { TileRef } from "../../../core/game/GameMap";
+import { getBridgeRects, getRailroadRects } from "./RailroadSprites";
 
 type RailRef = {
   tile: RailTile;
@@ -19,15 +20,18 @@ type RailRef = {
 };
 
 export class RailroadLayer implements Layer {
-  private canvas: HTMLCanvasElement | undefined;
-  private context: CanvasRenderingContext2D | undefined;
-  private readonly theme: Theme;
+  private canvas: HTMLCanvasElement;
+  private context: CanvasRenderingContext2D;
+  private theme: Theme;
   // Save the number of railroads per tiles. Delete when it reaches 0
-  private readonly existingRailroads = new Map<TileRef, RailRef>();
+  private existingRailroads = new Map<TileRef, RailRef>();
   private nextRailIndexToCheck = 0;
   private railTileList: TileRef[] = [];
 
-  constructor(private readonly game: GameView) {
+  constructor(
+    private game: GameView,
+    private transformHandler: TransformHandler,
+  ) {
     this.theme = game.config().theme();
   }
 
@@ -84,14 +88,23 @@ export class RailroadLayer implements Layer {
     this.canvas.width = this.game.width() * 2;
     this.canvas.height = this.game.height() * 2;
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     for (const [_, rail] of this.existingRailroads) {
       this.paintRail(rail.tile);
     }
   }
 
   renderLayer(context: CanvasRenderingContext2D) {
-    if (this.canvas === undefined) throw new Error("Not initialized");
     this.updateRailColors();
+    const scale = this.transformHandler.scale;
+    if (scale <= 1) {
+      return;
+    }
+    const rawAlpha = (scale - 1) / (2 - 1); // maps 1->0, 2->1
+    const alpha = Math.max(0, Math.min(1, rawAlpha));
+
+    context.save();
+    context.globalAlpha = alpha;
     context.drawImage(
       this.canvas,
       -this.game.width() / 2,
@@ -99,12 +112,11 @@ export class RailroadLayer implements Layer {
       this.game.width(),
       this.game.height(),
     );
+    context.restore();
   }
 
   private handleRailroadRendering(railUpdate: RailroadUpdate) {
     for (const railRoad of railUpdate.railTiles) {
-      const x = this.game.x(railRoad.tile);
-      const y = this.game.y(railRoad.tile);
       if (railUpdate.isActive) {
         this.paintRailroad(railRoad);
       } else {
@@ -171,20 +183,30 @@ export class RailroadLayer implements Layer {
     const owner = this.game.owner(tile);
     const recipient = owner.isPlayer() ? owner : null;
     const color = recipient
-      ? this.theme.railroadColor(recipient)
+      ? recipient.borderColor()
       : new Colord({ r: 255, g: 255, b: 255, a: 1 });
     this.context.fillStyle = color.toRgbString();
     this.paintRailRects(this.context, x, y, railType);
   }
 
-  private paintRailRects(context: CanvasRenderingContext2D, x: number, y: number, direction: RailType) {
+  private paintRailRects(
+    context: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    direction: RailType,
+  ) {
     const railRects = getRailroadRects(direction);
     for (const [dx, dy, w, h] of railRects) {
       context.fillRect(x * 2 + dx, y * 2 + dy, w, h);
     }
   }
 
-  private paintBridge(context: CanvasRenderingContext2D, x: number, y: number, direction: RailType) {
+  private paintBridge(
+    context: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    direction: RailType,
+  ) {
     context.save();
     context.fillStyle = "rgb(197,69,72)";
     const bridgeRects = getBridgeRects(direction);

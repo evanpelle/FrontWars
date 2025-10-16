@@ -1,23 +1,22 @@
-import { GameID, GameInfo } from "../core/Schemas";
-import { GameMapType, GameMode } from "../core/game/Game";
 import { LitElement, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { ApiPublicLobbiesResponseSchema } from "../core/ExpressSchemas";
+import { renderDuration, translateText } from "../client/Utils";
+import { GameMapType, GameMode } from "../core/game/Game";
+import { GameID, GameInfo } from "../core/Schemas";
+import { generateID } from "../core/Util";
 import { JoinLobbyEvent } from "./Main";
-import { getClientID } from "../core/Util";
 import { terrainMapFileLoader } from "./TerrainMapFileLoader";
-import { translateText } from "../client/Utils";
 
 @customElement("public-lobby")
 export class PublicLobby extends LitElement {
   @state() private lobbies: GameInfo[] = [];
-  @state() public isLobbyHighlighted = false;
-  @state() private isButtonDebounced = false;
-  @state() private readonly mapImages: Map<GameID, string> = new Map();
+  @state() public isLobbyHighlighted: boolean = false;
+  @state() private isButtonDebounced: boolean = false;
+  @state() private mapImages: Map<GameID, string> = new Map();
   private lobbiesInterval: number | null = null;
   private currLobby: GameInfo | null = null;
-  private readonly debounceDelay = 750;
-  private readonly lobbyIDToStart = new Map<GameID, number>();
+  private debounceDelay: number = 750;
+  private lobbyIDToStart = new Map<GameID, number>();
 
   createRenderRoot() {
     return this;
@@ -75,11 +74,10 @@ export class PublicLobby extends LitElement {
 
   async fetchLobbies(): Promise<GameInfo[]> {
     try {
-      const response = await fetch("/api/public_lobbies");
+      const response = await fetch(`/api/public_lobbies`);
       if (!response.ok)
         throw new Error(`HTTP error! status: ${response.status}`);
-      const json = await response.json();
-      const data = ApiPublicLobbiesResponseSchema.parse(json);
+      const data = await response.json();
       return data.lobbies;
     } catch (error) {
       console.error("Error fetching lobbies:", error);
@@ -106,9 +104,7 @@ export class PublicLobby extends LitElement {
     const timeRemaining = Math.max(0, Math.floor((start - Date.now()) / 1000));
 
     // Format time to show minutes and seconds
-    const minutes = Math.floor(timeRemaining / 60);
-    const seconds = timeRemaining % 60;
-    const timeDisplay = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+    const timeDisplay = renderDuration(timeRemaining);
 
     const teamCount =
       lobby.gameConfig.gameMode === GameMode.Team
@@ -121,14 +117,17 @@ export class PublicLobby extends LitElement {
       <button
         @click=${() => this.lobbyClicked(lobby)}
         ?disabled=${this.isButtonDebounced}
-        class="isolate grid h-40 grid-cols-[100%] grid-rows-[100%] place-content-stretch w-full overflow-hidden ${
-          this.isLobbyHighlighted
-            ? "bg-gradient-to-r from-green-600 to-green-500"
-            : "bg-gradient-to-r from-blue-600 to-blue-500"
-        } text-white font-medium rounded-xl transition-opacity duration-200 hover:opacity-90 ${
-          this.isButtonDebounced
-            ? "opacity-70 cursor-not-allowed"
-            : ""}"
+        class="isolate grid h-40 grid-cols-[100%] grid-rows-[100%] place-content-stretch w-full overflow-hidden ${this
+          .isLobbyHighlighted
+          ? document.documentElement.classList.contains("halloween")
+            ? "bg-gradient-to-r from-purple-800 to-purple-700"
+            : "bg-gradient-to-r from-green-600 to-green-500"
+          : document.documentElement.classList.contains("halloween")
+          ? "bg-gradient-to-r from-orange-700 to-orange-600"
+          : "bg-gradient-to-r from-blue-600 to-blue-500"} text-white font-medium rounded-xl transition-opacity duration-200 hover:opacity-90 ${this
+          .isButtonDebounced
+          ? "opacity-70 cursor-not-allowed"
+          : ""}"
       >
         ${mapImageSrc
           ? html`<img
@@ -147,18 +146,24 @@ export class PublicLobby extends LitElement {
             <div class="text-lg md:text-2xl font-semibold">
               ${translateText("public_lobby.join")}
             </div>
-            <div class="text-md font-medium text-blue-100">
+            <div class="text-md font-medium ${document.documentElement.classList.contains("halloween")
+                ? "text-orange-200"
+                : "text-blue-100"}">
               <span
                 class="text-sm ${this.isLobbyHighlighted
-                  ? "text-green-600"
+                  ? document.documentElement.classList.contains("halloween")
+                    ? "text-purple-800"
+                    : "text-green-600"
+                  : document.documentElement.classList.contains("halloween")
+                  ? "text-orange-700"
                   : "text-blue-600"} bg-white rounded-sm px-1"
               >
                 ${lobby.gameConfig.gameMode === GameMode.Team
                   ? typeof teamCount === "string"
                     ? translateText(`public_lobby.teams_${teamCount}`)
                     : translateText("public_lobby.teams", {
-                      num: teamCount ?? 0,
-                    })
+                        num: teamCount ?? 0,
+                      })
                   : translateText("game_mode.ffa")}</span
               >
               <span
@@ -170,10 +175,14 @@ export class PublicLobby extends LitElement {
           </div>
 
           <div>
-            <div class="text-md font-medium text-blue-100">
+            <div class="text-md font-medium ${document.documentElement.classList.contains("halloween")
+                ? "text-orange-200"
+                : "text-blue-100"}">
               ${lobby.numClients} / ${lobby.gameConfig.maxPlayers}
             </div>
-            <div class="text-md font-medium text-blue-100">${timeDisplay}</div>
+            <div class="text-md font-medium ${document.documentElement.classList.contains("halloween")
+                ? "text-orange-200"
+                : "text-blue-100"}">${timeDisplay}</div>
           </div>
         </div>
       </button>
@@ -205,7 +214,7 @@ export class PublicLobby extends LitElement {
         new CustomEvent("join-lobby", {
           detail: {
             gameID: lobby.gameID,
-            clientID: getClientID(lobby.gameID),
+            clientID: generateID(),
           } as JoinLobbyEvent,
           bubbles: true,
           composed: true,

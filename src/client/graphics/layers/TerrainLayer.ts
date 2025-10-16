@@ -1,17 +1,17 @@
-import { GameView } from "../../../core/game/GameView";
-import { Layer } from "./Layer";
 import { Theme } from "../../../core/configuration/Config";
+import { GameView } from "../../../core/game/GameView";
 import { TransformHandler } from "../TransformHandler";
+import { Layer } from "./Layer";
 
 export class TerrainLayer implements Layer {
-  private canvas: HTMLCanvasElement | undefined;
-  private context: CanvasRenderingContext2D | undefined;
-  private imageData: ImageData | undefined;
-  private theme: Theme | undefined;
+  private canvas: HTMLCanvasElement;
+  private context: CanvasRenderingContext2D;
+  private imageData: ImageData;
+  private theme: Theme;
 
   constructor(
-    private readonly game: GameView,
-    private readonly transformHandler: TransformHandler,
+    private game: GameView,
+    private transformHandler: TransformHandler,
   ) {}
   shouldTransform(): boolean {
     return true;
@@ -29,27 +29,26 @@ export class TerrainLayer implements Layer {
 
   redraw(): void {
     this.canvas = document.createElement("canvas");
+    this.canvas.width = this.game.width();
+    this.canvas.height = this.game.height();
+
     const context = this.canvas.getContext("2d");
     if (context === null) throw new Error("2d context not supported");
     this.context = context;
 
-    this.imageData = this.context.getImageData(
-      0,
-      0,
-      this.game.width(),
-      this.game.height(),
+    this.imageData = this.context.createImageData(
+      this.canvas.width,
+      this.canvas.height,
     );
+
     this.initImageData();
-    this.canvas.width = this.game.width();
-    this.canvas.height = this.game.height();
     this.context.putImageData(this.imageData, 0, 0);
   }
 
   initImageData() {
     this.theme = this.game.config().theme();
     this.game.forEachTile((tile) => {
-      const terrainColor = this.theme?.terrainColor(this.game, tile);
-      if (terrainColor === undefined || this.imageData === undefined) return;
+      const terrainColor = this.theme.terrainColor(this.game, tile);
       // TODO: isn'te tileref and index the same?
       const index = this.game.y(tile) * this.game.width() + this.game.x(tile);
       const offset = index * 4;
@@ -67,7 +66,6 @@ export class TerrainLayer implements Layer {
     } else {
       context.imageSmoothingEnabled = false;
     }
-    if (this.canvas === undefined) throw new Error("Not initialized");
     context.drawImage(
       this.canvas,
       -this.game.width() / 2,

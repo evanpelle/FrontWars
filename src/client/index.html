@@ -2,14 +2,13 @@
 <html lang="en" class="h-full">
   <head>
     <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-F5P8MBF1TZ"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-F5P8MBF1TZ');
-</script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-F5P8MBF1TZ"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "G-F5P8MBF1TZ");
+    </script>
     <meta charset="UTF-8" />
     <meta
       name="viewport"
@@ -92,6 +91,10 @@
         filter: blur(4px) brightness(0.4) saturate(0.3) contrast(1.2);
       }
 
+      .halloween .bg-image {
+        filter: blur(3px) brightness(0.35) saturate(0.7) contrast(1.4) sepia(0.15) hue-rotate(300deg);
+      }
+
       /* display:none if child has class parent-hidden since we can't use shadow DOM in Lit due to Tailwind */
       .component-hideable:has(> .parent-hidden) {
         display: none;
@@ -111,12 +114,8 @@
       document.documentElement.className = "preload";
     </script>
 
-    <!-- Playwire ads -->
-    <script>
-      window.ramp = window.ramp || {};
-      window.ramp.que = window.ramp.que || [];
-      window.ramp.passiveMode = true;
-    </script>
+    <!-- NitroPay ads are loaded dynamically via NitroPaySDK -->
+    <script data-cfasync="false">window.nitroAds=window.nitroAds||{createAd:function(){return new Promise(e=>{window.nitroAds.queue.push(["createAd",arguments,e])})},addUserToken:function(){window.nitroAds.queue.push(["addUserToken",arguments])},queue:[]};</script>
   </head>
 
   <body
@@ -124,19 +123,24 @@
   >
     <div class="bg-image"></div>
 
-    <gutter-ad-modal></gutter-ad-modal>
-
     <!-- Main container with responsive padding -->
     <main class="flex justify-center flex-grow">
       <div
         class="scale-container w-full flex justify-center items-center gap-4"
       >
-        <!-- CrazyGames banners: left and right integrated in layout -->
+
+        <!-- Ad banner left -->
         <div
-          id="cg-banner-left"
+          id="ad-banner-left"
           class="ad"
           style="width: 300px; height: 600px"
-        ></div>
+        >
+        <!-- CrazyGames -->
+          <div id="cg-banner-left" class="ad" style="width: 300px; height: 600px"></div>
+          <!-- NitroPay -->
+          <div id="frontwars-300x600" class="ad" style="width: 300px; height: 600px"></div>
+        </div>
+
         <div class="container">
           <header class="l-header">
             <div class="l-header__content">
@@ -227,13 +231,18 @@
                 </g>
               </svg>
 
+              <!-- Halloween pumpkin positioned over logo -->
+              <div class="halloween-pumpkin-container" style="display: none; position: absolute; top: -50px; left: 0; transform: translateX(-50%) rotate(-27deg); transform-origin: 50px 50px; width: 110px; height: 110px; pointer-events: none; z-index: 10; margin: 0; padding: 0;">
+                <img src="../../resources/images/halloween/dark_pumpkin.png" alt="Halloween Pumpkin" style="width: 100%; height: 100%; object-fit: contain; filter: brightness(1.1) contrast(1.2) saturate(1.1);" />
+              </div>
+
               <!-- <div id="game-version" class="l-header__highlightText text-center">
                 Loading version...
               </div> -->
             </div>
           </header>
 
-          <o-button
+          <!-- <o-button
             id="login-discord"
             title="Initializing..."
             disable="true"
@@ -246,14 +255,14 @@
             translationKey="main.log_out"
             visible="false"
             block
-          ></o-button>
+          ></o-button> -->
 
           <div class="container__row">
             <flag-input class="w-[20%] md:w-[15%]"></flag-input>
             <territory-patterns-modal class="w-[20%] md:w-[15%]">
               <button
                 id="territory-patterns-input-preview-button"
-                class="w-full border p-[4px] rounded-lg flex cursor-pointer border-black/30 dark:border-gray-300/60 bg-white/70 dark:bg-[rgba(55,65,81,0.7)] justify-center"
+                class="w-full border p-[4px] rounded-lg flex cursor-pointer justify-center b-button"
                 title="Pick a pattern!"
               ></button>
             </territory-patterns-modal>
@@ -310,12 +319,25 @@
             class="ad w-full mt-4"
             style="height: 90px"
           ></div> -->
+          <!-- NitroPay representative banner (bottom) -->
+          <!-- <div
+            id="frontwars-728x90"
+            class="ad w-full mt-4"
+            style="height: 90px"
+          ></div> -->
         </div>
+
         <div
-          id="cg-banner-right"
+          id="ad-banner-right"
           class="ad"
           style="width: 300px; height: 600px"
-        ></div>
+        >
+          <!-- CrazyGames -->
+          <div id="cg-banner-right" class="ad" style="width: 300px; height: 600px"></div>
+          <!-- NitroPay -->
+          <div id="frontwars-300x600_2" class="ad" style="width: 300px; height: 600px"></div>
+        </div>
+
       </div>
     </main>
 
@@ -498,8 +520,8 @@
         }
 
         function updateBannerVisibility(scale) {
-          var leftBanner = document.getElementById("cg-banner-left");
-          var rightBanner = document.getElementById("cg-banner-right");
+          var leftBanner = document.getElementById("ad-banner-left");
+          var rightBanner = document.getElementById("ad-banner-right");
 
           if (!leftBanner || !rightBanner) return;
 
@@ -540,8 +562,5 @@
         onResize();
       })();
     </script>
-
-    <!-- Playwire ads -->
-    <script async src="//cdn.intergient.com/1025558/75940/ramp.js"></script>
   </body>
 </html>

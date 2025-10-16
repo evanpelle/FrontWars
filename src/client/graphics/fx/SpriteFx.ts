@@ -1,10 +1,14 @@
-import { Fx, FxType } from "./Fx";
+import { Theme } from "../../../core/configuration/Config";
+import { PlayerView } from "../../../core/game/GameView";
 import { AnimatedSprite } from "../AnimatedSprite";
 import { AnimatedSpriteLoader } from "../AnimatedSpriteLoader";
-import { PlayerView } from "../../../core/game/GameView";
-import { Theme } from "../../../core/configuration/Config";
+import { Fx, FxType } from "./Fx";
 
-function fadeInOut(t: number, fadeIn = 0.3, fadeOut = 0.7): number {
+function fadeInOut(
+  t: number,
+  fadeIn: number = 0.3,
+  fadeOut: number = 0.7,
+): number {
   if (t < fadeIn) {
     const f = t / fadeIn; // Map to [0, 1]
     return f * f;
@@ -20,9 +24,9 @@ function fadeInOut(t: number, fadeIn = 0.3, fadeOut = 0.7): number {
  */
 export class FadeFx implements Fx {
   constructor(
-    private readonly fxToFade: SpriteFx,
-    private readonly fadeIn: number,
-    private readonly fadeOut: number,
+    private fxToFade: SpriteFx,
+    private fadeIn: number,
+    private fadeOut: number,
   ) {}
 
   renderTick(duration: number, ctx: CanvasRenderingContext2D): boolean {
@@ -58,7 +62,7 @@ export class SpriteFx implements Fx {
       theme,
     );
     if (!this.animatedSprite) {
-      throw new Error(`Could not load animated sprite ${fxType}`);
+      console.error("Could not load animated sprite", fxType);
     } else {
       this.waitToTheEnd = duration ? true : false;
       this.duration = duration ?? this.animatedSprite.lifeTime() ?? 1000;
@@ -73,7 +77,6 @@ export class SpriteFx implements Fx {
 
     if (!this.animatedSprite.isActive() && !this.waitToTheEnd) return false;
 
-    const t = this.elapsedTime / this.duration;
     this.animatedSprite.update(frameTime);
     this.animatedSprite.draw(ctx, this.x, this.y);
     return true;

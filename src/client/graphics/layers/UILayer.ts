@@ -1,14 +1,14 @@
-import { GameView, UnitView } from "../../../core/game/GameView";
 import { Colord } from "colord";
 import { EventBus } from "../../../core/EventBus";
-import { GameUpdateType } from "../../../core/game/GameUpdates";
-import { Layer } from "./Layer";
-import { ProgressBar } from "../ProgressBar";
 import { Theme } from "../../../core/configuration/Config";
-import { TransformHandler } from "../TransformHandler";
-import { UnitSelectionEvent } from "../../InputHandler";
 import { UnitType } from "../../../core/game/Game";
+import { GameUpdateType } from "../../../core/game/GameUpdates";
+import { GameView, UnitView } from "../../../core/game/GameView";
 import { UserSettings } from "../../../core/game/UserSettings";
+import { UnitSelectionEvent } from "../../InputHandler";
+import { ProgressBar } from "../ProgressBar";
+import { TransformHandler } from "../TransformHandler";
+import { Layer } from "./Layer";
 
 const COLOR_PROGRESSION = [
   "rgb(232, 25, 25)",
@@ -25,15 +25,16 @@ const PROGRESSBAR_HEIGHT = 3; // Height of a bar
  * such as selection boxes, health bars, etc.
  */
 export class UILayer implements Layer {
-  private canvas: HTMLCanvasElement | undefined;
-  private context: CanvasRenderingContext2D | null = null;
-  private readonly theme: Theme | null = null;
+  private canvas: HTMLCanvasElement;
+  private context: CanvasRenderingContext2D | null;
+  private theme: Theme | null = null;
+  private userSettings: UserSettings = new UserSettings();
   private selectionAnimTime = 0;
-  private readonly allProgressBars: Map<
+  private allProgressBars: Map<
     number,
     { unit: UnitView; progressBar: ProgressBar }
   > = new Map();
-  private readonly allHealthBars: Map<number, ProgressBar> = new Map();
+  private allHealthBars: Map<number, ProgressBar> = new Map();
   // Keep track of currently selected unit
   private selectedUnit: UnitView | null = null;
 
@@ -48,8 +49,9 @@ export class UILayer implements Layer {
   private readonly SELECTION_BOX_SIZE = 6; // Size of the selection box (should be larger than the warship)
 
   constructor(
-    private readonly game: GameView,
-    private readonly eventBus: EventBus,
+    private game: GameView,
+    private eventBus: EventBus,
+    private transformHandler: TransformHandler,
   ) {
     this.theme = game.config().theme();
   }
@@ -69,8 +71,7 @@ export class UILayer implements Layer {
 
     this.game
       .updatesSinceLastTick()
-      ?.[GameUpdateType.Unit]
-      ?.map((unit) => this.game.unit(unit.id))
+      ?.[GameUpdateType.Unit]?.map((unit) => this.game.unit(unit.id))
       ?.forEach((unitView) => {
         if (unitView === undefined) return;
         this.onUnitEvent(unitView);
@@ -84,7 +85,6 @@ export class UILayer implements Layer {
   }
 
   renderLayer(context: CanvasRenderingContext2D) {
-    if (this.canvas === undefined) throw new Error("Not initialized");
     context.drawImage(
       this.canvas,
       -this.game.width() / 2,
@@ -143,7 +143,7 @@ export class UILayer implements Layer {
     if (this.context === null || this.theme === null) {
       return;
     }
-    const color = this.theme.borderColor(unit.owner());
+    const color = unit.owner().borderColor();
     this.context.fillStyle = color.toRgbString();
     this.context.fillRect(startX, startY, icon.width, icon.height);
     this.context.drawImage(icon, startX, startY);
@@ -208,7 +208,7 @@ export class UILayer implements Layer {
 
     // Get the unit's owner color for the box
     if (this.theme === null) throw new Error("missing theme");
-    const ownerColor = this.theme.territoryColor(unit.owner());
+    const ownerColor = unit.owner().territoryColor();
 
     // Create a brighter version of the owner color for the selection
     const selectionColor = ownerColor.lighten(0.2);
@@ -263,7 +263,7 @@ export class UILayer implements Layer {
    * Draw health bar for a unit
    */
   public drawHealthBar(unit: UnitView) {
-    const { maxHealth } = this.game.unitInfo(unit.type());
+    const maxHealth = this.game.unitInfo(unit.type()).maxHealth;
     if (maxHealth === undefined || this.context === null) {
       return;
     }
@@ -312,7 +312,7 @@ export class UILayer implements Layer {
       return 1;
     }
     switch (unit.type()) {
-      case UnitType.Construction:
+      case UnitType.Construction: {
         const constructionType = unit.constructionType();
         if (constructionType === undefined) {
           return 1;
@@ -326,7 +326,7 @@ export class UILayer implements Layer {
           (this.game.ticks() - unit.createdAt()) /
           (constDuration === 0 ? 1 : constDuration)
         );
-
+      }
       case UnitType.MissileSilo:
       case UnitType.SAMLauncher:
         return unit.missileReadinesss();

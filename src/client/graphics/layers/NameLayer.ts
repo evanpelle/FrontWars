@@ -1,13 +1,3 @@
-import { AllPlayers, Cell, nukeTypes } from "../../../core/game/Game";
-import { GameView, PlayerView } from "../../../core/game/GameView";
-import { createCanvas, renderNumber, renderTroops } from "../../Utils";
-import { AlternateViewEvent } from "../../InputHandler";
-import { EventBus } from "../../../core/EventBus";
-import { Layer } from "./Layer";
-import { PseudoRandom } from "../../../core/PseudoRandom";
-import { Theme } from "../../../core/configuration/Config";
-import { TransformHandler } from "../TransformHandler";
-import { UserSettings } from "../../../core/game/UserSettings";
 import allianceIcon from "../../../../resources/images/AllianceIcon.svg";
 import allianceRequestBlackIcon from "../../../../resources/images/AllianceRequestBlackIcon.svg";
 import allianceRequestWhiteIcon from "../../../../resources/images/AllianceRequestWhiteIcon.svg";
@@ -17,10 +7,20 @@ import embargoBlackIcon from "../../../../resources/images/EmbargoBlackIcon.svg"
 import embargoWhiteIcon from "../../../../resources/images/EmbargoWhiteIcon.svg";
 import nukeRedIcon from "../../../../resources/images/NukeIconRed.svg";
 import nukeWhiteIcon from "../../../../resources/images/NukeIconWhite.svg";
-import { renderPlayerFlag } from "../../../core/CustomFlag";
 import shieldIcon from "../../../../resources/images/ShieldIconBlack.svg";
 import targetIcon from "../../../../resources/images/TargetIcon.svg";
 import traitorIcon from "../../../../resources/images/TraitorIcon.svg";
+import { renderPlayerFlag } from "../../../core/CustomFlag";
+import { EventBus } from "../../../core/EventBus";
+import { PseudoRandom } from "../../../core/PseudoRandom";
+import { Theme } from "../../../core/configuration/Config";
+import { AllPlayers, Cell, nukeTypes } from "../../../core/game/Game";
+import { GameView, PlayerView } from "../../../core/game/GameView";
+import { UserSettings } from "../../../core/game/UserSettings";
+import { AlternateViewEvent } from "../../InputHandler";
+import { createCanvas, renderNumber, renderTroops } from "../../Utils";
+import { TransformHandler } from "../TransformHandler";
+import { Layer } from "./Layer";
 
 class RenderInfo {
   public icons: Map<string, HTMLImageElement> = new Map(); // Track icon elements
@@ -36,35 +36,35 @@ class RenderInfo {
 }
 
 export class NameLayer implements Layer {
-  private canvas: HTMLCanvasElement | undefined;
+  private canvas: HTMLCanvasElement;
   private lastChecked = 0;
-  private readonly renderCheckRate = 100;
-  private readonly renderRefreshRate = 500;
-  private readonly rand = new PseudoRandom(10);
+  private renderCheckRate = 100;
+  private renderRefreshRate = 500;
+  private rand = new PseudoRandom(10);
   private renders: RenderInfo[] = [];
-  private readonly seenPlayers: Set<PlayerView> = new Set();
-  private readonly traitorIconImage: HTMLImageElement;
-  private readonly disconnectedIconImage: HTMLImageElement;
-  private readonly allianceRequestBlackIconImage: HTMLImageElement;
-  private readonly allianceRequestWhiteIconImage: HTMLImageElement;
-  private readonly allianceIconImage: HTMLImageElement;
-  private readonly targetIconImage: HTMLImageElement;
-  private readonly crownIconImage: HTMLImageElement;
-  private readonly embargoBlackIconImage: HTMLImageElement;
-  private readonly embargoWhiteIconImage: HTMLImageElement;
-  private readonly nukeWhiteIconImage: HTMLImageElement;
-  private readonly nukeRedIconImage: HTMLImageElement;
-  private readonly shieldIconImage: HTMLImageElement;
-  private container: HTMLDivElement | undefined;
+  private seenPlayers: Set<PlayerView> = new Set();
+  private traitorIconImage: HTMLImageElement;
+  private disconnectedIconImage: HTMLImageElement;
+  private allianceRequestBlackIconImage: HTMLImageElement;
+  private allianceRequestWhiteIconImage: HTMLImageElement;
+  private allianceIconImage: HTMLImageElement;
+  private targetIconImage: HTMLImageElement;
+  private crownIconImage: HTMLImageElement;
+  private embargoBlackIconImage: HTMLImageElement;
+  private embargoWhiteIconImage: HTMLImageElement;
+  private nukeWhiteIconImage: HTMLImageElement;
+  private nukeRedIconImage: HTMLImageElement;
+  private shieldIconImage: HTMLImageElement;
+  private container: HTMLDivElement;
   private firstPlace: PlayerView | null = null;
   private theme: Theme = this.game.config().theme();
-  private readonly userSettings: UserSettings = new UserSettings();
-  private isVisible = true;
+  private userSettings: UserSettings = new UserSettings();
+  private isVisible: boolean = true;
 
   constructor(
-    private readonly game: GameView,
-    private readonly transformHandler: TransformHandler,
-    private readonly eventBus: EventBus,
+    private game: GameView,
+    private transformHandler: TransformHandler,
+    private eventBus: EventBus,
   ) {
     this.traitorIconImage = new Image();
     this.traitorIconImage.src = traitorIcon;
@@ -93,7 +93,6 @@ export class NameLayer implements Layer {
   }
 
   resizeCanvas() {
-    if (!this.canvas) throw new Error("Not initialzied");
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
   }
@@ -140,8 +139,14 @@ export class NameLayer implements Layer {
     const isOnScreen = render.location
       ? this.transformHandler.isOnScreen(render.location)
       : false;
+    const maxZoomScale = 17;
 
-    if (!this.isVisible || size < 7 || !isOnScreen) {
+    if (
+      !this.isVisible ||
+      size < 7 ||
+      (this.transformHandler.scale > maxZoomScale && size > 100) ||
+      !isOnScreen
+    ) {
       render.element.style.display = "none";
     } else {
       render.element.style.display = "flex";
@@ -186,10 +191,7 @@ export class NameLayer implements Layer {
       screenPosOld.x - window.innerWidth / 2,
       screenPosOld.y - window.innerHeight / 2,
     );
-    if (!this.container) throw new Error("Not initialzied");
-    this.container.style.transform =
-      `translate(${screenPos.x}px, ${screenPos.y}px) ` +
-      `scale(${this.transformHandler.scale})`;
+    this.container.style.transform = `translate(${screenPos.x}px, ${screenPos.y}px) scale(${this.transformHandler.scale})`;
 
     const now = Date.now();
     if (now > this.lastChecked + this.renderCheckRate) {
@@ -199,7 +201,6 @@ export class NameLayer implements Layer {
       }
     }
 
-    if (!this.canvas) throw new Error("Not initialzied");
     mainContex.drawImage(
       this.canvas,
       0,
@@ -236,7 +237,7 @@ export class NameLayer implements Layer {
     };
 
     if (player.cosmetics.flag) {
-      const { flag } = player.cosmetics;
+      const flag = player.cosmetics.flag;
       if (flag !== undefined && flag !== null && flag.startsWith("!")) {
         const flagWrapper = document.createElement("div");
         applyFlagStyles(flagWrapper);
@@ -305,7 +306,6 @@ export class NameLayer implements Layer {
     // Start off invisible so it doesn't flash at 0,0
     element.style.display = "none";
 
-    if (!this.container) throw new Error("Not initialzied");
     this.container.appendChild(element);
     return element;
   }
@@ -611,8 +611,7 @@ export class NameLayer implements Layer {
     // Position element with scale
     if (render.location && render.location !== oldLocation) {
       const scale = Math.min(baseSize * 0.25, 3);
-      render.element.style.transform =
-        `translate(${render.location.x}px, ${render.location.y}px) translate(-50%, -50%) scale(${scale})`;
+      render.element.style.transform = `translate(${render.location.x}px, ${render.location.y}px) translate(-50%, -50%) scale(${scale})`;
     }
   }
 
@@ -620,7 +619,7 @@ export class NameLayer implements Layer {
     src: string,
     size: number,
     id: string,
-    center = false,
+    center: boolean = false,
   ): HTMLImageElement {
     const icon = document.createElement("img");
     icon.src = src;

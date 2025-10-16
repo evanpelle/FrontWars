@@ -18,7 +18,6 @@ export const MapDescription: Record<keyof typeof GameMapType, string> = {
   Pangaea: "Pangaea",
   Asia: "Asia",
   Mars: "Mars",
-  MarsRevised: "Mars Revised",
   SouthAmerica: "South America",
   Britannia: "Britannia",
   GatewayToTheAtlantic: "Gateway to the Atlantic",
@@ -31,18 +30,19 @@ export const MapDescription: Record<keyof typeof GameMapType, string> = {
   FalklandIslands: "Falkland Islands",
   Baikal: "Baikal",
   Halkidiki: "Halkidiki",
-  NorthernHemisphere: "Northern Hemisphere",
   StraitOfGibraltar: "Strait of Gibraltar",
   Italia: "Italia",
+  Japan: "Japan",
   Yenisei: "Yenisei",
   Pluto: "Pluto",
+  Montreal: "Montreal",
 };
 
 @customElement("map-display")
 export class MapDisplay extends LitElement {
   @property({ type: String }) mapKey = "";
   @property({ type: Boolean }) selected = false;
-  @property({ type: String }) translation = "";
+  @property({ type: String }) translation: string = "";
   @state() private mapWebpPath: string | null = null;
   @state() private mapName: string | null = null;
   @state() private isLoading = true;
