@@ -1,3 +1,46 @@
+📦 **FrontWars v25.2 Changelog**
+
+🚀 **New Economy Mode**
+
+- Brand new Economy Mode with two speeds: Classic and Fast!
+- Classic mode offers the traditional economic gameplay experience
+- Fast mode provides accelerated resource generation and trade mechanics
+- Choose your preferred economic pace when creating lobbies or playing single player
+- Economy Mode affects trade ships, trains, and resource generation rates
+
+⚖️ **Economic Balancing**
+
+- **Trade Ships**: Completely rebalanced gold rewards and spawn rates
+  → More strategic port management - each port you own increases trade ship gold rewards
+  → Better scaling for different numbers of ports owned
+  → Improved spawn mechanics to prevent economic domination
+  
+- **Trains**: Enhanced train economics and spawn mechanics
+  → Trains now generate more gold based on relationships (allies get more than enemies)
+  → Improved spawn rates that scale better with factory count
+  → More balanced train gold rewards across different player relationships
+
+- **Ports**: Refined trade ship generation
+  → Ports now have more strategic value in trade ship spawning
+  → Better balance between port count and trade ship frequency
+  → Improved economic scaling for different game sizes
+
+🔧 **Bug Fixes & Improvements**
+
+- Fixed Steam wishlist link in victory modal
+- Improved economic system stability and performance
+- Better handling of resource generation across different game modes
+
+📦 **FrontWars v25.1 Changelog**
+
+🐛 **Bug Fixes & Improvements**
+
+- Fixed gold donation system crashes
+- Fixed performance issues with ad loading that could cause lag
+- Fixed UI warnings and improved slider functionality
+- Added missing MIRV weapon translations
+- Completed Ukrainian language translation
+
 📦 **FrontWars v25 Changelog**
 
 🎃 **Halloween Update**

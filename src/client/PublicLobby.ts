@@ -47,6 +47,7 @@ export class PublicLobby extends LitElement {
         // the time to appear irregular.
         if (!this.lobbyIDToStart.has(l.gameID)) {
           const msUntilStart = l.msUntilStart ?? 0;
+          console.log(msUntilStart);
           this.lobbyIDToStart.set(l.gameID, msUntilStart + Date.now());
         }
 
@@ -149,6 +150,17 @@ export class PublicLobby extends LitElement {
             <div class="text-md font-medium ${document.documentElement.classList.contains("halloween")
                 ? "text-orange-200"
                 : "text-blue-100"}">
+              <span
+                class="text-sm ${this.isLobbyHighlighted
+                  ? document.documentElement.classList.contains("halloween")
+                    ? "text-purple-800"
+                    : "text-green-600"
+                  : document.documentElement.classList.contains("halloween")
+                  ? "text-orange-700"
+                  : "text-blue-600"} bg-white rounded-sm px-1 mr-1"
+              >
+                ${translateText(`economy_mode.${lobby.gameConfig.economyMode.toLowerCase()}`)}
+              </span>
               <span
                 class="text-sm ${this.isLobbyHighlighted
                   ? document.documentElement.classList.contains("halloween")

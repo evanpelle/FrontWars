@@ -31,7 +31,7 @@ class AdProviderManager {
 		// Set up a unified refresh timer
 		if (this.refreshTimerId === null) {
 			this.refreshTimerId = window.setInterval(() => {
-				void this.renderBanners();
+				void this.refreshBanners();
 			}, 60000);
 		}
 
@@ -41,7 +41,6 @@ class AdProviderManager {
 	async renderBanners(): Promise<void> {
     console.log("renderBanners");
 		if (this.isCrazyGames) {
-			// CrazyGames responsive banners
 			void CrazySDK.requestResponsiveBanner("cg-banner-left");
 			void CrazySDK.requestResponsiveBanner("cg-banner-right");
 			// Bottom banner may be disabled in markup, safe to request
@@ -56,6 +55,19 @@ class AdProviderManager {
 		// 	sizes: [["728", "90"]],
 		// 	report: this.nitroCommonOptions.report,
 		// });
+	}
+
+	async refreshBanners(): Promise<void> {
+		console.log("refresh banners")
+		if (this.isCrazyGames) {
+			void CrazySDK.requestResponsiveBanner("cg-banner-left");
+			void CrazySDK.requestResponsiveBanner("cg-banner-right");
+			// Bottom banner may be disabled in markup, safe to request
+			// void CrazySDK.requestResponsiveBanner("cg-banner-bottom");
+			return;
+		}
+
+		// Do not refresh NitroPaySDK: NitroPay manages updates automatically
 	}
 }
 

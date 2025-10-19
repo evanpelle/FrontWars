@@ -222,6 +222,7 @@ class CrazyGamesSDKManager {
     await this.waitForLoad();
 
     try {
+      this.showBanner(id);
       await window.CrazyGames.SDK.banner.requestResponsiveBanner(id);
     } catch (error) {
       console.warn("Failed to request CrazyGames responsive banner:", id, error);
@@ -242,6 +243,20 @@ class CrazyGamesSDKManager {
       window.location.href = urlObj.toString();
     } else {
       window.location.href = url;
+    }
+  }
+
+  showBanner(id: string): void {
+    const element = document.getElementById(id);
+    if (element) {
+      element.style.display = "block";
+    }
+  }
+
+  hideBanner(id: string): void {
+    const element = document.getElementById(id);
+    if (element) {
+      element.style.display = "none";
     }
   }
 }

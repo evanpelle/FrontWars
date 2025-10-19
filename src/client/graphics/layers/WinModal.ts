@@ -101,10 +101,7 @@ export class WinModal extends LitElement implements Layer {
   }
 
   innerHtml() {
-    if (isInIframe()) {
-      return this.steamWishlist();
-    }
-    return this.renderPatternButton();
+    return this.steamWishlist();
   }
 
   renderPatternButton() {

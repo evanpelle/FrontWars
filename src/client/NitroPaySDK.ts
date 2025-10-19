@@ -49,10 +49,25 @@ class NitroPaySDKManager {
     ...rest: any[]
   ): Promise<void> {
     try {
+      this.showBanner(id);
       await this.ensureScript();
       await window.nitroAds.createAd(id, options, ...rest);
     } catch (error) {
       console.warn("NitroPay renderBanner failed", id, error);
+    }
+  }
+
+  showBanner(id: string): void {
+    const element = document.getElementById(id);
+    if (element) {
+      element.style.display = "block";
+    }
+  }
+
+  hideBanner(id: string): void {
+    const element = document.getElementById(id);
+    if (element) {
+      element.style.display = "none";
     }
   }
 }

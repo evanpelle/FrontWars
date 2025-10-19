@@ -56,6 +56,7 @@ export class SettingKeybind extends LitElement {
   }
 
   private displayKey(key: string): string {
+    if (key === "Null") return "Unbound";
     if (key === " ") return "Space";
     if (key.startsWith("Key") && key.length === 4) {
       return key.slice(3);
@@ -102,7 +103,7 @@ export class SettingKeybind extends LitElement {
   }
 
   private unbindKey() {
-    this.value = "";
+    this.value = "Null";
     this.dispatchEvent(
       new CustomEvent("change", {
         detail: { action: this.action, value: "Null" },

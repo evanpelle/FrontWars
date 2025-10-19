@@ -6,6 +6,7 @@ import { getServerConfigFromClient } from "../core/configuration/ConfigLoader";
 import {
   Difficulty,
   Duos,
+  GameEconomyMode,
   GameMapSize,
   GameMapType,
   GameMode,
@@ -54,7 +55,7 @@ export class HostLobbyModal extends LitElement {
   @state() private disabledUnits: UnitType[] = [];
   @state() private lobbyCreatorClientID: string = "";
   @state() private lobbyIdVisible: boolean = true;
-
+  @state() private economyMode: GameEconomyMode = GameEconomyMode.Classic;
   private playersInterval: NodeJS.Timeout | null = null;
   // Add a new timer for debouncing bot changes
   private botsUpdateTimer: number | null = null;
@@ -268,6 +269,29 @@ export class HostLobbyModal extends LitElement {
               >
                 <div class="option-card-title">
                   ${translateText("game_mode.teams")}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Economy Mode Selection -->
+          <div class="options-section">
+            <div class="option-title">${translateText("host_modal.economy_mode")}</div>
+            <div class="option-cards">
+              <div
+                class="option-card ${this.economyMode === GameEconomyMode.Classic ? "selected" : ""}"
+                @click=${() => this.handleEconomyModeSelection(GameEconomyMode.Classic)}
+              >
+                <div class="option-card-title">
+                  ${translateText("economy_mode.classic")}
+                </div>
+              </div>
+              <div
+                class="option-card ${this.economyMode === GameEconomyMode.Fast ? "selected" : ""}"
+                @click=${() => this.handleEconomyModeSelection(GameEconomyMode.Fast)}
+              >
+                <div class="option-card-title">
+                  ${translateText("economy_mode.fast")}
                 </div>
               </div>
             </div>
@@ -651,6 +675,11 @@ export class HostLobbyModal extends LitElement {
     this.putGameConfig();
   }
 
+  private async handleEconomyModeSelection(value: GameEconomyMode) {
+    this.economyMode = value;
+    this.putGameConfig();
+  }
+
   private async putGameConfig() {
     const config = await getServerConfigFromClient();
     const response = await fetch(
@@ -676,6 +705,7 @@ export class HostLobbyModal extends LitElement {
           gameMode: this.gameMode,
           disabledUnits: this.disabledUnits,
           playerTeams: this.teamCount,
+          economyMode: this.economyMode,
         } satisfies Partial<GameConfig>),
       },
     );

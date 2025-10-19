@@ -35,7 +35,6 @@ import { UsernameInput } from "./UsernameInput";
 import {
   generateCryptoRandomUUID,
   incrementGamesPlayed,
-  isInIframe,
   translateText,
 } from "./Utils";
 import "./components/NewsButton";
@@ -204,9 +203,6 @@ class Client {
     const patternButton = document.getElementById(
       "territory-patterns-input-preview-button",
     );
-    if (isInIframe() && patternButton) {
-      patternButton.style.display = "none";
-    }
 
     this.patternsModal instanceof TerritoryPatternsModal;
     if (patternButton === null)

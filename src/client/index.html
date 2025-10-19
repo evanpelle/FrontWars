@@ -1,6 +1,15 @@
 <!doctype html>
 <html lang="en" class="h-full">
   <head>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "7f91717f-cc84-452e-839f-78ac998fff54",
+    });
+  });
+</script>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-F5P8MBF1TZ"></script>
     <script>
@@ -136,9 +145,9 @@
           style="width: 300px; height: 600px"
         >
         <!-- CrazyGames -->
-          <div id="cg-banner-left" class="ad" style="width: 300px; height: 600px"></div>
+          <div id="cg-banner-left" class="ad" style="width: 300px; height: 600px; display: none;"></div>
           <!-- NitroPay -->
-          <div id="frontwars-300x600" class="ad" style="width: 300px; height: 600px"></div>
+          <div id="frontwars-300x600" class="ad" style="width: 300px; height: 600px; display: none;"></div>
         </div>
 
         <div class="container">
@@ -259,13 +268,11 @@
 
           <div class="container__row">
             <flag-input class="w-[20%] md:w-[15%]"></flag-input>
-            <territory-patterns-modal class="w-[20%] md:w-[15%]">
-              <button
-                id="territory-patterns-input-preview-button"
-                class="w-full border p-[4px] rounded-lg flex cursor-pointer justify-center b-button"
-                title="Pick a pattern!"
-              ></button>
-            </territory-patterns-modal>
+            <button
+              id="territory-patterns-input-preview-button"
+              class="border w-[20%] md:w-[15%] p-[4px] rounded-lg flex cursor-pointer justify-center b-button"
+              title="Pick a pattern!"
+            ></button>
             <username-input class="relative w-full"></username-input>
             <news-button
               class="w-[20%] md:w-[15%] component-hideable"
@@ -333,9 +340,9 @@
           style="width: 300px; height: 600px"
         >
           <!-- CrazyGames -->
-          <div id="cg-banner-right" class="ad" style="width: 300px; height: 600px"></div>
+          <div id="cg-banner-right" class="ad" style="width: 300px; height: 600px; display: none;"></div>
           <!-- NitroPay -->
-          <div id="frontwars-300x600_2" class="ad" style="width: 300px; height: 600px"></div>
+          <div id="frontwars-300x600_2" class="ad" style="width: 300px; height: 600px; display: none;"></div>
         </div>
 
       </div>
@@ -465,7 +472,7 @@
     <flag-input-modal></flag-input-modal>
     <fps-display></fps-display>
     <language-modal></language-modal>
-
+    <territory-patterns-modal></territory-patterns-modal>
     <!-- Scripts -->
     <script>
       // Remove preload class after everything is loaded

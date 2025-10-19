@@ -161,7 +161,7 @@ export class InputHandler {
             if (typeof v === "string") return [k, v];
             return [k, undefined];
           })
-          .filter(([, v]) => typeof v === "string" && v !== "Null"),
+          .filter(([, v]) => typeof v === "string"),
       ) as Record<string, string>;
     } catch (e) {
       console.warn("Invalid keybinds JSON:", e);
